@@ -41,6 +41,14 @@ export interface ReverseDcfResult {
     residual_per_share: number;
 }
 
+export interface HistoryPoint {
+    year: number;
+    revenue: number;
+    fcf: number;
+    fcf_margin: number;
+    revenue_growth: number | null;
+}
+
 export interface TickerSnapshot {
     ticker: string;
     price: number;
@@ -51,6 +59,7 @@ export interface TickerSnapshot {
     currency: string | null;
     as_of: string;
     source: string;
+    history: HistoryPoint[];
 }
 
 export interface ReverseDcfRequest {
@@ -70,9 +79,24 @@ const BASE = import.meta.env.VITE_API_BASE ?? "/api";
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${BASE}${path}`, init);
     if (!response.ok) {
-        // The API answers every refusal with {"detail": "..."} — a sentence worth showing.
+        // Domain refusals answer with {"detail": "a sentence"}; pydantic validation answers
+        // with {"detail": [{loc, msg}, ...]}. Rendering the raw status for the second case
+        // is how "Unprocessable Content" ends up on screen instead of the actual problem.
         const body = await response.json().catch(() => null);
-        throw new Error(typeof body?.detail === "string" ? body.detail : `${response.status} ${response.statusText}`);
+        const detail = body?.detail;
+        if (typeof detail === "string") throw new Error(detail);
+        if (Array.isArray(detail)) {
+            throw new Error(
+                detail
+                    .map((item: { loc?: unknown[]; msg?: string }) => {
+                        const field = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : undefined;
+                        const message = (item.msg ?? "invalid value").replace(/^Value error, /, "");
+                        return field && field !== "body" ? `${String(field)}: ${message}` : message;
+                    })
+                    .join("; "),
+            );
+        }
+        throw new Error(`${response.status} ${response.statusText}`);
     }
     return response.json() as Promise<T>;
 }

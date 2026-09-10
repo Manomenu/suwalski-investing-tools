@@ -1,7 +1,13 @@
 from datetime import UTC, datetime, timedelta
 
 from suwalski_investing_library.contracts.market import TickerSnapshot
-from suwalski_investing_library.marketdata.provider import get_snapshot
+from suwalski_investing_library.marketdata.provider import get_snapshot as _get_snapshot
+
+
+def get_snapshot(*args, **kwargs):
+    """Never let these tests reach SEC EDGAR: the year history has its own suite."""
+    kwargs.setdefault("history_sources", ())
+    return _get_snapshot(*args, **kwargs)
 
 
 def _snapshot(price: float = 100.0, as_of: datetime | None = None) -> TickerSnapshot:
@@ -64,5 +70,6 @@ def test_a_dotted_symbol_keeps_its_dot(tmp_path):
 def test_a_symbol_cannot_steer_the_cache_write_out_of_the_directory(tmp_path):
     get_snapshot("../escape", cache_dir=tmp_path, fetch=lambda symbol: _snapshot())
 
+    # Whatever gets written lands inside the cache dir, never above it.
     assert [path.name for path in tmp_path.iterdir()] == ["_ESCAPE.json"]
     assert not (tmp_path.parent / "escape.json").exists()

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 from suwalski_investing_library.marketdata.errors import MarketDataError
-from suwalski_investing_library.marketdata.yahoo import build_snapshot
+from suwalski_investing_library.marketdata.yahoo import build_history, build_snapshot
 
 # Real NVDA quarterly figures as Yahoo returns them: newest column first.
 QUARTERS = [pd.Timestamp(date) for date in ("2026-07-31", "2026-04-30", "2026-01-31", "2025-10-31")]
@@ -73,3 +73,42 @@ def test_a_missing_share_count_is_refused():
 
 def test_a_debt_free_balance_sheet_means_zero_net_debt():
     assert _snapshot(balance=pd.DataFrame()).net_debt == 0.0
+
+
+ANNUAL_YEARS = [pd.Timestamp(date) for date in ("2026-01-31", "2025-01-31", "2024-01-31", "2023-01-31")]
+ANNUAL_INCOME = pd.DataFrame({"Total Revenue": [215.9e9, 130.5e9, 60.9e9, 27.0e9]}, index=ANNUAL_YEARS).transpose()
+ANNUAL_CASHFLOW = pd.DataFrame({"Free Cash Flow": [96.7e9, 60.7e9, 27.0e9, 3.8e9]}, index=ANNUAL_YEARS).transpose()
+
+
+def test_history_runs_oldest_first_with_margin_and_growth():
+    history = build_history(ANNUAL_INCOME, ANNUAL_CASHFLOW)
+
+    assert [point.year for point in history] == [2023, 2024, 2025, 2026]
+    assert history[0].revenue_growth is None  # nothing on record before it
+    assert history[1].revenue_growth == pytest.approx(60.9 / 27.0 - 1)
+    assert history[-1].fcf_margin == pytest.approx(96.7 / 215.9)
+
+
+def test_a_year_whose_cash_flow_is_missing_still_anchors_the_next_year_growth():
+    # Yahoo frequently reports one more year of revenue than of cash flow.
+    cashflow = ANNUAL_CASHFLOW.drop(columns=[ANNUAL_YEARS[3]])
+
+    history = build_history(ANNUAL_INCOME, cashflow)
+
+    assert [point.year for point in history] == [2024, 2025, 2026]
+    assert history[0].revenue_growth == pytest.approx(60.9 / 27.0 - 1)
+
+
+def test_history_falls_back_to_operating_minus_capex():
+    cashflow = pd.DataFrame(
+        {"Operating Cash Flow": [100e9, 70e9, 30e9, 5e9], "Capital Expenditure": [-3e9, -2e9, -1e9, -0.5e9]},
+        index=ANNUAL_YEARS,
+    ).transpose()
+
+    history = build_history(ANNUAL_INCOME, cashflow)
+
+    assert history[-1].fcf == pytest.approx(97e9)
+
+
+def test_no_statements_means_no_history_rather_than_an_error():
+    assert build_history(pd.DataFrame(), pd.DataFrame()) == []

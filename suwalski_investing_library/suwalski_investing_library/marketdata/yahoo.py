@@ -14,7 +14,7 @@ from typing import Any
 
 import pandas as pd
 
-from suwalski_investing_library.contracts.market import TickerSnapshot
+from suwalski_investing_library.contracts.market import HistoryPoint, TickerSnapshot
 from suwalski_investing_library.marketdata.errors import MarketDataError, UnknownTickerError
 
 SOURCE = "yfinance"
@@ -39,6 +39,12 @@ def fetch_snapshot(ticker: str) -> TickerSnapshot:
     balance = _statement(handle, symbol, "quarterly_balance_sheet")
     price, shares, currency = _quote(handle, symbol)
 
+    # Annual statements are a separate request; they carry the reported-year history that
+    # the UI charts. Yahoo returns four or five years, so the history is simply as long as
+    # it is — a missing one is not worth failing a valuation over.
+    annual_income = _statement(handle, symbol, "income_stmt")
+    annual_cashflow = _statement(handle, symbol, "cashflow")
+
     return build_snapshot(
         symbol,
         price=price,
@@ -47,6 +53,7 @@ def fetch_snapshot(ticker: str) -> TickerSnapshot:
         income=income,
         cashflow=cashflow,
         balance=balance,
+        history=build_history(annual_income, annual_cashflow),
     )
 
 
@@ -82,6 +89,7 @@ def build_snapshot(
     income: pd.DataFrame,
     cashflow: pd.DataFrame,
     balance: pd.DataFrame,
+    history: list[HistoryPoint] | None = None,
 ) -> TickerSnapshot:
     """Turn raw statements into a snapshot. Pure — no network, no clock beyond `as_of`."""
     if not price:
@@ -110,7 +118,68 @@ def build_snapshot(
         currency=currency,
         as_of=datetime.now(UTC),
         source=SOURCE,
+        history=history or [],
     )
+
+
+class YahooAnnualSource:
+    """Yahoo's four or five annual years. Short, but it covers filers EDGAR never sees —
+    anything listed outside the US, Warsaw included."""
+
+    name = "yahoo-annual"
+
+    def years(self, symbol: str, **_: object) -> list[HistoryPoint]:
+        import yfinance
+
+        handle = yfinance.Ticker(symbol.strip().upper())
+        return build_history(
+            _statement(handle, symbol, "income_stmt"),
+            _statement(handle, symbol, "cashflow"),
+        )
+
+
+def build_history(annual_income: pd.DataFrame, annual_cashflow: pd.DataFrame) -> list[HistoryPoint]:
+    """Reported fiscal years, oldest first, for the margin and growth charts.
+
+    Years Yahoo cannot supply both revenue and free cash flow for are dropped rather than
+    guessed at — a gap in a history chart is honest, an invented point is not.
+    """
+    revenue = _row(annual_income, "Total Revenue", "Operating Revenue")
+    if revenue is None:
+        return []
+
+    fcf = _row(annual_cashflow, "Free Cash Flow")
+    if fcf is None:
+        operating = _row(annual_cashflow, "Operating Cash Flow", "Cash Flow From Continuing Operating Activities")
+        capex = _row(annual_cashflow, "Capital Expenditure")
+        fcf = None if operating is None or capex is None else operating - capex.abs()
+    if fcf is None:
+        return []
+
+    # Growth walks the full revenue series, so a year whose cash-flow row is missing still
+    # anchors the growth of the year after it — Yahoo often carries one more year of revenue
+    # than of cash flow.
+    points: list[HistoryPoint] = []
+    previous: float | None = None
+    for date in sorted(revenue.index):
+        reported = float(revenue[date])
+        if reported <= 0:
+            continue
+        growth = None if previous is None else reported / previous - 1
+        previous = reported
+        if date not in fcf.index:
+            continue
+        cash = float(fcf[date])
+        points.append(
+            HistoryPoint(
+                year=date.year,
+                revenue=reported,
+                fcf=cash,
+                fcf_margin=cash / reported,
+                revenue_growth=growth,
+            )
+        )
+    return points
 
 
 def _net_debt(balance: pd.DataFrame) -> float:

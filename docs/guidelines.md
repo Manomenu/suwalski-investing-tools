@@ -16,6 +16,17 @@ AI-assisted coding live in `CLAUDE.md`; this document is about the repository it
   test_packaging.py` enforces that by importing the engine in a subprocess and failing if
   pandas, numpy or yfinance came along. A second provider is a new module behind the same
   `TickerSnapshot` contract, not a change to the callers.
+- **History sources are a list, asked in order, and their years are merged.** Not a chain of
+  responsibility: that pattern stops at the first handler that answers, and the first answer
+  here is often partial — EDGAR has a decade for SEC filers, Yahoo has four years but reaches
+  every other market. What the loop borrows is the early exit; once the horizon is covered
+  the remaining sources are never called. A new source is a class with `name` and `years()`
+  plus an entry in `DEFAULT_SOURCES` — no caller changes. Either being down degrades the
+  chart, never the valuation.
+- **One tag supplies a series, never a mix of aliases.** XBRL lets a company tag the same
+  line item differently across years, and mixing aliases per year silently compares
+  incomparable definitions — GRAB has a year tagged at $0.05B next to $1.43B for the same
+  period. The alias with the widest coverage wins; the others only fill years it lacks.
 - **A provider supplies facts, never assumptions.** Price, share count, TTM revenue, TTM
   FCF and net debt are observable. Optimized margin, growth, discount rate and terminal
   growth are the user's and must never be defaulted from fetched data — that would quietly

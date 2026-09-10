@@ -29,6 +29,8 @@ class _Handle:
         self.quarterly_income_stmt = income
         self.quarterly_cashflow = CASHFLOW
         self.quarterly_balance_sheet = pd.DataFrame()
+        self.income_stmt = pd.DataFrame()
+        self.cashflow = pd.DataFrame()
         self.fast_info = fast_info
 
 

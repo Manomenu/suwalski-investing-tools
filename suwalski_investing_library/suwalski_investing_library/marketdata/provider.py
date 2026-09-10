@@ -17,6 +17,7 @@ from pathlib import Path
 
 from suwalski_investing_library.constants import SOLUTION_ROOT
 from suwalski_investing_library.contracts.market import TickerSnapshot
+from suwalski_investing_library.marketdata.history import DEFAULT_SOURCES, DEFAULT_YEARS, get_history
 from suwalski_investing_library.marketdata.yahoo import fetch_snapshot
 
 CACHE_DIR = Path(os.environ.get("SUWALSKI_MARKET_CACHE", SOLUTION_ROOT / ".artifacts" / "market"))
@@ -32,18 +33,31 @@ def get_snapshot(
     cache_dir: Path = CACHE_DIR,
     refresh: bool = False,
     fetch: Callable[[str], TickerSnapshot] = fetch_snapshot,
+    history_years: int = DEFAULT_YEARS,
+    history_sources=DEFAULT_SOURCES,
 ) -> TickerSnapshot:
-    """Cached snapshot for `ticker`. `refresh=True` skips the cache but still refills it."""
+    """Cached snapshot for `ticker`. `refresh=True` skips the cache but still refills it.
+
+    Price and TTM figures come from the provider and go stale in minutes; the year-by-year
+    history comes from its own store and goes stale in months, so the two are cached apart.
+    """
     symbol = ticker.strip().upper()
     path = cache_dir / f"{_safe_name(symbol)}.json"
 
-    if not refresh:
-        cached = _read(path, ttl_seconds)
-        if cached is not None:
-            return cached
+    cached = None if refresh else _read(path, ttl_seconds)
+    snapshot = cached if cached is not None else fetch(symbol)
+    # The snapshot fetch already paid for Yahoo's annual statements — they seed the store,
+    # so a covered symbol reaches no source at all.
+    snapshot.history = get_history(
+        symbol,
+        years=history_years,
+        cache_dir=cache_dir,
+        seed=snapshot.history,
+        sources=history_sources,
+    )
 
-    snapshot = fetch(symbol)
-    _write(path, snapshot)
+    if cached is None:
+        _write(path, snapshot)
     return snapshot
 
 

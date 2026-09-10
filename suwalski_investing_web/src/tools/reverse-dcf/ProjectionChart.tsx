@@ -12,18 +12,8 @@ export function ProjectionChart({ years }: { years: YearProjection[] }) {
     const active = years.find((year) => year.year === hovered) ?? null;
 
     return (
-        <figure className="flex h-full min-w-0 flex-col rounded-lg border border-surface0 bg-base p-5">
-            <figcaption className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-sm font-semibold tracking-wide text-subtext0 uppercase">
-                    Projected free cash flow
-                </span>
-                <span className="flex items-center gap-5 text-sm text-subtext0">
-                    <Key color="bg-blue" label="your input" />
-                    <Key color="bg-peach" label="solved" />
-                </span>
-            </figcaption>
-
-            <div className="mt-5 flex min-h-0 flex-1 gap-3">
+        <div className="flex h-full min-w-0 flex-col">
+            <div className="flex min-h-0 flex-1 gap-3">
                 <div className="flex w-16 shrink-0 flex-col justify-between pb-6 text-right text-sm font-mono tabular-nums text-overlay0">
                     <span>{money(max)}</span>
                     <span>{money(max / 2)}</span>
@@ -84,16 +74,7 @@ export function ProjectionChart({ years }: { years: YearProjection[] }) {
                     <p className="text-base text-overlay0">hover a year for its revenue, margin and discounted value</p>
                 )}
             </div>
-        </figure>
-    );
-}
-
-function Key({ color, label }: { color: string; label: string }) {
-    return (
-        <span className="flex items-center gap-1.5">
-            <span className={`h-2 w-2 rounded-full ${color}`} />
-            {label}
-        </span>
+        </div>
     );
 }
 
