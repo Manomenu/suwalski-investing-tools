@@ -1,0 +1,141 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run server",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "suwalski_investing_server",
+            "cwd": "${workspaceFolder}/suwalski_investing_server",
+            "python": "${workspaceFolder}/suwalski_investing_server/.venv/bin/python",
+            "justMyCode": true
+        },
+        {
+            "name": "Run server (auto-reload)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "suwalski_investing_server.app:app",
+                "--reload",
+                "--port",
+                "6100"
+            ],
+            "cwd": "${workspaceFolder}/suwalski_investing_server",
+            "python": "${workspaceFolder}/suwalski_investing_server/.venv/bin/python",
+            "justMyCode": true
+        },
+        {
+            "name": "rdcf: NVDA example",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "suwalski_investing_cli",
+            "args": [
+                "--ticker",
+                "NVDA",
+                "--optimized-margin",
+                "35%",
+                "--growth",
+                "1-3:55%",
+                "--discount",
+                "10%",
+                "--terminal",
+                "3%"
+            ],
+            "cwd": "${workspaceFolder}/suwalski_investing_cli",
+            "python": "${workspaceFolder}/suwalski_investing_cli/.venv/bin/python",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "rdcf: ask for arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "suwalski_investing_cli",
+            "args": [
+                "--ticker",
+                "${input:ticker}",
+                "--optimized-margin",
+                "${input:optimizedMargin}",
+                "--growth",
+                "${input:growth}",
+                "--discount",
+                "${input:discount}",
+                "--terminal",
+                "${input:terminal}"
+            ],
+            "cwd": "${workspaceFolder}/suwalski_investing_cli",
+            "python": "${workspaceFolder}/suwalski_investing_cli/.venv/bin/python",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "pytest: library",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-v"
+            ],
+            "cwd": "${workspaceFolder}/suwalski_investing_library",
+            "python": "${workspaceFolder}/suwalski_investing_library/.venv/bin/python",
+            "justMyCode": false
+        },
+        {
+            "name": "pytest: server",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-v"
+            ],
+            "cwd": "${workspaceFolder}/suwalski_investing_server",
+            "python": "${workspaceFolder}/suwalski_investing_server/.venv/bin/python",
+            "justMyCode": false
+        },
+        {
+            "name": "pytest: cli",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-v"
+            ],
+            "cwd": "${workspaceFolder}/suwalski_investing_cli",
+            "python": "${workspaceFolder}/suwalski_investing_cli/.venv/bin/python",
+            "justMyCode": false
+        }
+    ],
+    "inputs": [
+        {
+            "id": "ticker",
+            "type": "promptString",
+            "description": "Ticker symbol",
+            "default": "NVDA"
+        },
+        {
+            "id": "optimizedMargin",
+            "type": "promptString",
+            "description": "Optimized FCF margin the business settles at",
+            "default": "35%"
+        },
+        {
+            "id": "growth",
+            "type": "promptString",
+            "description": "Known growth, YEARS:RATE (the rest is solved)",
+            "default": "1-3:55%"
+        },
+        {
+            "id": "discount",
+            "type": "promptString",
+            "description": "Discount rate — the annual return you demand",
+            "default": "10%"
+        },
+        {
+            "id": "terminal",
+            "type": "promptString",
+            "description": "Terminal growth after the projection",
+            "default": "3%"
+        }
+    ]
+}

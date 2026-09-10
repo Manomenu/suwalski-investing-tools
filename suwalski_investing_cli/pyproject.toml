@@ -1,0 +1,26 @@
+[project]
+name = "suwalski-investing-cli"
+version = "0.1.0"
+description = "Terminal front-end for the suwalski valuation engine"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "suwalski-investing-library[tickers]",  # engine, contracts and ticker snapshots (path via uv.sources)
+]
+
+[project.scripts]
+rdcf = "suwalski_investing_cli.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+suwalski-investing-library = { path = "../suwalski_investing_library", editable = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["suwalski_investing_cli"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]

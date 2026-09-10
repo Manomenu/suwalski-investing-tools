@@ -1,0 +1,28 @@
+{
+    "editor.formatOnSave": true,
+    "python.analysis.extraPaths": [
+        "./suwalski_investing_library"
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/*.pyo": true,
+        "**/.pytest_cache": true,
+        "**/.ruff_cache": true,
+        "**/.mypy_cache": true,
+        "**/*.egg-info": true,
+        "**/.coverage": true,
+        "**/.venv": true,
+        "**/.artifacts": true
+    },
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.expand": false,
+    "explorer.fileNesting.patterns": {
+        "README.md": "CLAUDE.md, ruff.toml, .editorconfig, .gitignore, .dockerignore, *.code-workspace",
+        "pyproject.toml": "uv.lock, pyrightconfig.json, .python-version",
+        ".env.base": ".env, .env.example"
+    }
+}

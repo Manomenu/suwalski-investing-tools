@@ -1,0 +1,39 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "test-solution",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/test-solution.sh",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "cleanup (repo only)",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/cleanup.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "cleanup --all (dry run)",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/cleanup.sh --all --dry-run",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
