@@ -2,12 +2,10 @@ import { useEffect, useState } from "react";
 
 import { fetchSnapshot, solveReverseDcf, type ReverseDcfResult, type TickerSnapshot } from "../../lib/api";
 import { Assumptions, type AssumptionState } from "./Assumptions";
+import { ChartPanel } from "./ChartPanel";
 import { Headline } from "./Headline";
-import { ProjectionChart } from "./ProjectionChart";
 import { ProjectionTable } from "./ProjectionTable";
 
-// Deliberately fixed, never seeded from the fetched snapshot: the margin and the growth are
-// the opinions this tool exists to test. Today's margin is shown beside the slider instead.
 const DEFAULTS: AssumptionState = {
     mode: "split",
     optimizedMargin: 0.35,
@@ -17,6 +15,14 @@ const DEFAULTS: AssumptionState = {
     terminal: 0.025,
     years: 10,
 };
+
+/** Terminal growth must stay below the discount rate, and the discount slider can move
+ *  under a terminal rate that was fine when it was set — the API rejects that pairing, so
+ *  it never gets sent. */
+function withValidTerminal(next: AssumptionState): AssumptionState {
+    const ceiling = next.discount - 0.005;
+    return next.terminal > ceiling ? { ...next, terminal: Math.max(0, ceiling) } : next;
+}
 
 export function ReverseDcfTool() {
     const [symbol, setSymbol] = useState("NVDA");
@@ -32,7 +38,18 @@ export function ReverseDcfTool() {
         setLoading(true);
         setSnapshotError(null);
         fetchSnapshot(symbol, controller.signal)
-            .then(setSnapshot)
+            .then((fetched) => {
+                setSnapshot(fetched);
+                // Start the margin at what the company actually earns today. A fixed default
+                // is itself an assumption, and a worse one: 35% is unremarkable for NVDA and
+                // absurd for a grocery chain running at 2%, where it values three years of
+                // cash above the entire market cap and the solver has nothing to solve.
+                const today = fetched.fcf_ttm / fetched.revenue_ttm;
+                setAssumptions((current) => ({
+                    ...current,
+                    optimizedMargin: Math.min(0.8, Math.max(0.01, Math.round(today * 1000) / 1000)),
+                }));
+            })
             .catch((error: Error) => {
                 if (error.name !== "AbortError") {
                     setSnapshot(null);
@@ -94,7 +111,7 @@ export function ReverseDcfTool() {
                     symbol={symbol}
                     onSymbol={setSymbol}
                     value={assumptions}
-                    onChange={setAssumptions}
+                    onChange={(next) => setAssumptions(withValidTerminal(next))}
                 />
             </section>
 
@@ -108,7 +125,7 @@ export function ReverseDcfTool() {
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 wide:flex-row">
                     {result ? (
                         <div className="min-h-64 min-w-0 flex-[2]">
-                            <ProjectionChart years={result.projection.years} />
+                            <ChartPanel years={result.projection.years} history={snapshot?.history ?? []} />
                         </div>
                     ) : null}
                     {result ? (

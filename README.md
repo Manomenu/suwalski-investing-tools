@@ -19,7 +19,7 @@ GROWTH THE PRICE REQUIRES
 
 | Project | What it is |
 | --- | --- |
-| `suwalski_investing_library/` | The valuation engine, the pydantic contracts, and `marketdata/` (ticker snapshots off Yahoo Finance). The engine half is stdlib + pydantic only — importing it pulls in no scraper. |
+| `suwalski_investing_library/` | The valuation engine, the pydantic contracts, and `marketdata/` (ticker snapshots off Yahoo Finance, year history off SEC EDGAR). The engine half is stdlib + pydantic only — importing it pulls in no scraper. |
 | `suwalski_investing_server/` | FastAPI over the engine. Exists so a browser dashboard can call it later. Port 6100. |
 | `suwalski_investing_cli/` | `rdcf` — the same engine in the terminal, for fast iteration without a UI. |
 | `suwalski_investing_web/` | The UI: React 19 + Vite + Tailwind 4, Catppuccin Mocha. A static build — no Node server to run or deploy. Port 3000. |
@@ -171,6 +171,51 @@ The split is the point: a data provider supplies facts, you supply the opinions.
 Units are free-form — billions, millions, dollars — as long as revenue, net debt and share
 count use the same one. The math and a worked example are in
 [`docs/reverse-dcf.md`](docs/reverse-dcf.md).
+
+## Where the history comes from
+
+The chart panel has three tabs: the projection, and two views of what the company actually
+reported — FCF margin and revenue growth per fiscal year. They exist to make the sliders
+arguable: a 35% optimized margin reads differently next to ten years of 20%.
+
+Yahoo carries four or five annual years. **SEC EDGAR's XBRL API** carries as many as the
+company filed — ten for KO, ten for MSFT — is free, official, and needs no key, so it is the
+primary source with Yahoo as the fallback for symbols EDGAR does not cover (non-US filers).
+
+Two things make that usable rather than merely available:
+
+- **Sources are a list, not a fallback chain.** `DEFAULT_SOURCES` is asked in order —
+  EDGAR first for its decade, Yahoo second for the markets EDGAR never sees — and their
+  years are merged rather than the first winner taking it. Adding a source is a class with
+  `name` and `years()` plus one entry.
+- **The cache accumulates years.** EDGAR has no "give me years 4-8" endpoint — `companyfacts`
+  is one document with everything — so a request can never be made smaller. What the cache
+  does is make it unnecessary: years are stored individually, every fetch is merged into what
+  is already on disk, and the network is only touched when the years asked for are not
+  covered. Widening the horizon after a fetch has proved the filer has no more years costs
+  nothing. Years also survive their source: if EDGAR later drops one, the stored copy stays.
+- **Only the continuous tail is charted.** XBRL tags drift, and a company can be missing a
+  year in the middle — EDGAR has no capex tag for NVDA between 2013 and 2021. A gap in a
+  history chart reads like a collapse, so the unbroken run is what gets returned; the cache
+  keeps the orphaned years in case another source fills the hole.
+
+**ADRs are covered too**, because a foreign issuer listed in the US files a 20-F with the
+SEC: SE and ASML come back with ten years, TSM with ten (in TWD), GRAB with four — its whole
+life since listing. That needs two things the domestic path does not: the `ifrs-full`
+taxonomy alongside `us-gaap`, and reading whichever currency the company reports in rather
+than assuming USD. Both are handled. EDGAR lists no ticker for some ADRs (Sea Limited files
+under CIK 1703399 with `tickers: []`), and guessing by company name is unsafe — EDGAR carries
+two "SEA LTD" entries — so those are mapped explicitly through `SEC_CIK_OVERRIDES`.
+
+**Warsaw-listed companies are not in EDGAR at all** — `DNP.WA`, `CDR.WA`, `PKO.WA` all
+resolve, but through Yahoo, which means four years instead of ten, in the local currency.
+There is no free, licence-clean API with a decade of GPW fundamentals; the data exists on
+scraper-hostile sites and in per-company ESEF filings with no central index. One caveat the model cannot know:
+the discount rate is yours to set per currency. 10% is a reasonable hurdle in USD; for a
+PLN-denominated business, both it and the terminal growth carry higher local inflation.
+
+EDGAR refuses requests without a `User-Agent` that names the tool (and, oddly, refuses ones
+that impersonate a browser). Set `SEC_USER_AGENT` to your own "name email" — see `.env.example`.
 
 ## Roadmap
 

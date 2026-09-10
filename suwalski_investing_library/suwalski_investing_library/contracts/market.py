@@ -10,6 +10,17 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
+class HistoryPoint(BaseModel):
+    """One reported fiscal year. `revenue_growth` is None for the oldest year on record —
+    there is nothing before it to compare against."""
+
+    year: int
+    revenue: float
+    fcf: float
+    fcf_margin: float
+    revenue_growth: float | None = None
+
+
 class TickerSnapshot(BaseModel):
     ticker: str
     price: float = Field(gt=0, description="last traded price per share")
@@ -20,6 +31,10 @@ class TickerSnapshot(BaseModel):
     currency: str | None = None
     as_of: datetime = Field(description="when the snapshot was fetched, UTC")
     source: str = Field(description="provider that produced it, e.g. 'yfinance'")
+    history: list[HistoryPoint] = Field(
+        default_factory=list,
+        description="reported fiscal years, oldest first. Yahoo carries four or five, not ten",
+    )
 
     @property
     def fcf_margin(self) -> float:
