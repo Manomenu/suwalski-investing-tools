@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+    <!-- Catppuccin Mocha: base plate, bars in the same blue/peach the chart uses. -->
+    <rect width="32" height="32" rx="7" fill="#1e1e2e" />
+    <rect x="6" y="19" width="5" height="8" rx="1.5" fill="#89b4fa" />
+    <rect x="13.5" y="14" width="5" height="13" rx="1.5" fill="#89b4fa" />
+    <rect x="21" y="8" width="5" height="19" rx="1.5" fill="#fab387" />
+    <path d="M6 12.5 L13 8.5 L18.5 10.5 L26.5 4" fill="none" stroke="#cba6f7" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
+    <path d="M22.5 4 L27 4 L27 8.5" fill="none" stroke="#cba6f7" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
+</svg>
