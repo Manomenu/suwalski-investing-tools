@@ -1,0 +1,28 @@
+[project]
+name = "suwalski-investing-library"
+version = "0.1.0"
+description = "Valuation engine and cross-service contracts for suwalski-investing-tools"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "pydantic>=2.0",  # contracts; the engine itself is stdlib-only
+]
+
+[project.optional-dependencies]
+# Only `marketdata/` needs these. Installing the library without this extra keeps the
+# valuation engine free of pandas, numpy and an unofficial Yahoo scraper.
+tickers = [
+    "yfinance>=0.2.50",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["suwalski_investing_library"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "yfinance>=0.2.50",  # the marketdata tests exercise the `tickers` extra
+]

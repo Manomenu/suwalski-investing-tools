@@ -1,0 +1,48 @@
+{
+    "folders": [
+        {
+            "name": "library",
+            "path": "suwalski_investing_library"
+        },
+        {
+            "name": "server",
+            "path": "suwalski_investing_server"
+        },
+        {
+            "name": "cli",
+            "path": "suwalski_investing_cli"
+        },
+        {
+            "name": "repo root",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "python.analysis.autoImportCompletions": true,
+        "python.terminal.activateEnvironment": true,
+        "files.exclude": {
+            "**/__pycache__": true,
+            "**/*.pyc": true,
+            "**/*.pyo": true,
+            "**/.pytest_cache": true,
+            "**/.ruff_cache": true,
+            "**/.mypy_cache": true,
+            "**/*.egg-info": true,
+            "**/.coverage": true,
+            "**/.venv": true,
+            "**/.artifacts": true
+        },
+        "search.exclude": {
+            "**/.venv": true,
+            "**/uv.lock": true,
+            "**/.artifacts": true
+        },
+        "explorer.fileNesting.enabled": true,
+        "explorer.fileNesting.expand": false,
+        "explorer.fileNesting.patterns": {
+            "README.md": "CLAUDE.md, ruff.toml, .editorconfig, .gitignore, .dockerignore, *.code-workspace",
+            "pyproject.toml": "uv.lock, pyrightconfig.json, .python-version",
+            ".env.base": ".env, .env.example"
+        }
+    }
+}
