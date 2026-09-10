@@ -7,7 +7,7 @@
             "request": "launch",
             "module": "suwalski_investing_server",
             "cwd": "${workspaceFolder}/suwalski_investing_server",
-            "python": "${workspaceFolder}/suwalski_investing_server/.venv/bin/python",
+            "python": "${workspaceFolder}/.venv/bin/python",
             "justMyCode": true
         },
         {
@@ -22,7 +22,7 @@
                 "6100"
             ],
             "cwd": "${workspaceFolder}/suwalski_investing_server",
-            "python": "${workspaceFolder}/suwalski_investing_server/.venv/bin/python",
+            "python": "${workspaceFolder}/.venv/bin/python",
             "justMyCode": true
         },
         {
@@ -43,7 +43,7 @@
                 "3%"
             ],
             "cwd": "${workspaceFolder}/suwalski_investing_cli",
-            "python": "${workspaceFolder}/suwalski_investing_cli/.venv/bin/python",
+            "python": "${workspaceFolder}/.venv/bin/python",
             "console": "integratedTerminal",
             "justMyCode": true
         },
@@ -65,45 +65,31 @@
                 "${input:terminal}"
             ],
             "cwd": "${workspaceFolder}/suwalski_investing_cli",
-            "python": "${workspaceFolder}/suwalski_investing_cli/.venv/bin/python",
+            "python": "${workspaceFolder}/.venv/bin/python",
             "console": "integratedTerminal",
             "justMyCode": true
         },
         {
-            "name": "pytest: library",
+            "name": "pytest: all projects",
             "type": "debugpy",
             "request": "launch",
             "module": "pytest",
             "args": [
+                "suwalski_investing_library",
+                "suwalski_investing_server",
+                "suwalski_investing_cli",
                 "-v"
             ],
-            "cwd": "${workspaceFolder}/suwalski_investing_library",
-            "python": "${workspaceFolder}/suwalski_investing_library/.venv/bin/python",
+            "cwd": "${workspaceFolder}",
+            "python": "${workspaceFolder}/.venv/bin/python",
             "justMyCode": false
         },
         {
-            "name": "pytest: server",
-            "type": "debugpy",
+            "name": "web (vite dev)",
+            "type": "node-terminal",
             "request": "launch",
-            "module": "pytest",
-            "args": [
-                "-v"
-            ],
-            "cwd": "${workspaceFolder}/suwalski_investing_server",
-            "python": "${workspaceFolder}/suwalski_investing_server/.venv/bin/python",
-            "justMyCode": false
-        },
-        {
-            "name": "pytest: cli",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "pytest",
-            "args": [
-                "-v"
-            ],
-            "cwd": "${workspaceFolder}/suwalski_investing_cli",
-            "python": "${workspaceFolder}/suwalski_investing_cli/.venv/bin/python",
-            "justMyCode": false
+            "cwd": "${workspaceFolder}/suwalski_investing_web",
+            "command": "pnpm dev"
         }
     ],
     "inputs": [
@@ -128,7 +114,7 @@
         {
             "id": "discount",
             "type": "promptString",
-            "description": "Discount rate — the annual return you demand",
+            "description": "Discount rate \u2014 the annual return you demand",
             "default": "10%"
         },
         {

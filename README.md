@@ -22,15 +22,16 @@ GROWTH THE PRICE REQUIRES
 | `suwalski_investing_library/` | The valuation engine, the pydantic contracts, and `marketdata/` (ticker snapshots off Yahoo Finance). The engine half is stdlib + pydantic only — importing it pulls in no scraper. |
 | `suwalski_investing_server/` | FastAPI over the engine. Exists so a browser dashboard can call it later. Port 6100. |
 | `suwalski_investing_cli/` | `rdcf` — the same engine in the terminal, for fast iteration without a UI. |
+| `suwalski_investing_web/` | The UI: React 19 + Vite + Tailwind 4, Catppuccin Mocha. A static build — no Node server to run or deploy. Port 3000. |
 | `scripts/` | Entry points: run the server, run the CLI, lint+test everything. |
 | `infrastructure/` | Kubernetes / Terraform, once there is something worth deploying. See its README. |
 | `.artifacts/` | Local scratch: cached ticker snapshots. Gitignored. |
 | `docs/` | `reverse-dcf.md` (the model and its math), `guidelines.md` (repo rules). |
 
-Prerequisite: [uv](https://docs.astral.sh/uv/). Each project is its own uv project with a
-committed lockfile; the server and CLI depend on `suwalski-investing-library[tickers]` as an
-editable path dependency. The `tickers` extra is what drags in `yfinance` — the library
-installed without it is pure valuation math.
+Prerequisites: [uv](https://docs.astral.sh/uv/) and [pnpm](https://pnpm.io/). The Python
+side is one **uv workspace**: `uv sync` at the root builds a single `.venv` that knows every
+package, and `uv.lock` at the root is the only lockfile. The `tickers` extra is what drags in
+`yfinance` — the library installed without it is pure valuation math.
 
 ## Run it
 
@@ -65,6 +66,24 @@ Rates take `55%` or `0.55` — a bare number is always a decimal fraction. `--gr
 repeatable and takes `YEARS:RATE` (`1-3:55%`, or `5:10%` for a single year); every year no
 segment covers is handed to the solver. Add `--json` for the raw result.
 
+Browser:
+
+```bash
+./scripts/run-server.sh   # API on 6100
+./scripts/run-web.sh      # UI on http://localhost:3000, proxying /api to the server
+```
+
+The page is a left rail of tools and one open tool — no title bar, no chrome. Assumptions
+live in the left panel; growth is either a **single rate** for the whole horizon or a
+**split** (near-term years you pin, the rest solved). Every change re-solves, debounced, and
+the answer stays in one place: input and solved sit in one card, separated by an arrow with
+the solved figure in a filled panel, because it is the finding rather than another input.
+
+The layout fills the viewport rather than scrolling a page: the projection table keeps its
+summary pinned to the bottom while its rows scroll, and at 21:9 (>= 2200px) that table moves
+beside the chart instead of under it. Type is Inter for text and JetBrains Mono for every
+figure — both self-hosted, no CDN — so columns of numbers line up.
+
 HTTP API:
 
 ```bash
@@ -94,7 +113,7 @@ in all three projects with that setup.
 The workspace also trims the file tree, and the split matters: `files.exclude` hides only
 **generated** things (caches, `.venv`, `.artifacts`, `*.pyc`) — nothing in git, nothing you
 open. Version-controlled config that you do edit occasionally (`uv.lock`,
-`pyrightconfig.json`, the `.code-workspace`, `ruff.toml`, `CLAUDE.md`) is **nested**, not
+`pyrightconfig.json`, `ruff.toml`, `CLAUDE.md`, the web project's configs) is **nested**, not
 hidden: collapsed under `README.md` or `pyproject.toml`, one arrow-click away and still
 reachable from Ctrl+P. That distinction exists because VS Code has no "show hidden files"
 toggle for the explorer — a hidden file is genuinely hard to get back to, so only files you
@@ -112,7 +131,8 @@ interpreter so breakpoints resolve without any interpreter switching:
 | Run server (auto-reload) | the same through `uvicorn --reload` while editing routers |
 | rdcf: NVDA example | the CLI with the example arguments, in the integrated terminal |
 | rdcf: ask for arguments | prompts for ticker, margin, growth, discount and terminal rate |
-| pytest: library / server / cli | that project's suite, `justMyCode` off so you can step into pydantic |
+| pytest: all projects | the whole suite, `justMyCode` off so you can step into pydantic |
+| web (vite dev) | the UI with hot reload |
 
 `test-solution` is registered as the default test task (Ctrl+Shift+P → Run Test Task).
 
@@ -154,9 +174,6 @@ count use the same one. The math and a worked example are in
 
 ## Roadmap
 
-- **Web dashboard** — the API is already shaped for it: an "optimized FCF" slider is just
-  another value in the request, and every run returns the full year-by-year projection so
-  the page can chart it.
 - **More providers** — `yfinance` is an unofficial Yahoo scraper. If it starts breaking,
   a keyed provider (FMP, Tiingo) slots in behind the same `TickerSnapshot` contract.
 - **Infrastructure** — Kubernetes manifests, Terraform, k9s for day-to-day. Deliberately

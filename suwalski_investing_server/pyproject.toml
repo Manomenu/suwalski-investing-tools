@@ -15,7 +15,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-suwalski-investing-library = { path = "../suwalski_investing_library", editable = true }
+suwalski-investing-library = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["suwalski_investing_server"]

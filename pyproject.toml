@@ -1,0 +1,30 @@
+# uv workspace root. It exists so the whole solution resolves into ONE .venv at the repo
+# root: a single interpreter that knows every package, which is what lets VS Code (and
+# pyright) work from a plain folder instead of a multi-root workspace file.
+[project]
+name = "suwalski-investing-tools"
+version = "0.1.0"
+description = "Homelab valuation toolkit"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "suwalski-investing-library[tickers]",
+    "suwalski-investing-server",
+    "suwalski-investing-cli",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["suwalski_investing_library", "suwalski_investing_server", "suwalski_investing_cli"]
+
+[tool.uv.sources]
+suwalski-investing-library = { workspace = true }
+suwalski-investing-server = { workspace = true }
+suwalski-investing-cli = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",  # fastapi.testclient
+]

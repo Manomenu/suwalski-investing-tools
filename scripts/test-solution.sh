@@ -30,6 +30,12 @@ format_check() {
     (cd "$ROOT" && uvx ruff format --check .)
 }
 
+web_typecheck() {
+    cd "$ROOT/suwalski_investing_web"
+    [ -d node_modules ] || pnpm install --silent
+    pnpm exec tsc --noEmit
+}
+
 pytest_project() {
     local project="$1"
     if [ ! -d "$ROOT/$project/tests" ]; then
@@ -44,6 +50,7 @@ run_step "format (ruff format --check)" format_check
 for project in "${PYTHON_PROJECTS[@]}"; do
     run_step "pytest $project" pytest_project "$project"
 done
+run_step "typecheck suwalski_investing_web (tsc)" web_typecheck
 
 echo
 echo "================ test-solution report ================"
