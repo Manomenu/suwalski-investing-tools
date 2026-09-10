@@ -3,7 +3,7 @@
 #
 # Layers, because they are not equally expensive to rebuild:
 #   (default)   caches and generated files inside the repo — free to recreate
-#   --venvs     the three .venv directories        — `uv sync` rebuilds them
+#   --venvs     .venv and node_modules             — uv sync / pnpm install rebuild them
 #   --system    traces outside the repo: pytest's /tmp dirs, yfinance's timezone
 #               cache, this repo's VS Code workspace storage, and the shared uv cache
 #   --all       all of the above
@@ -86,10 +86,10 @@ done < <(find "$ROOT/.artifacts" -mindepth 1 -maxdepth 1 -not -name .gitkeep 2>/
 
 if [[ $DO_VENVS -eq 1 ]]; then
     echo
-    echo "== virtualenvs (rebuild with: uv sync) =="
+    echo "== environments (rebuild with: uv sync / pnpm install) =="
     while IFS= read -r path; do
         drop "$path" "${path#"$ROOT"/}" "$ROOT"
-    done < <(find "$ROOT" -maxdepth 2 -type d -name .venv 2>/dev/null)
+    done < <(find "$ROOT" -maxdepth 2 -type d \( -name .venv -o -name node_modules -o -name dist \) 2>/dev/null)
 fi
 
 if [[ $DO_SYSTEM -eq 1 ]]; then

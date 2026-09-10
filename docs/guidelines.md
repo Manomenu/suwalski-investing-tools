@@ -20,6 +20,9 @@ AI-assisted coding live in `CLAUDE.md`; this document is about the repository it
   FCF and net debt are observable. Optimized margin, growth, discount rate and terminal
   growth are the user's and must never be defaulted from fetched data — that would quietly
   turn the tool's one interesting output into an echo of the provider.
+- **The web app owns no valuation logic either.** It renders what the API returns and sends
+  back what the user typed; every number it displays comes from a response field. If the
+  page starts computing a figure, that figure belongs in the engine, where it can be tested.
 - **Server and CLI are adapters.** They parse input, call one library function, format the
   result. Business rules never leak into a router or an argparse handler. If you find
   yourself computing something in `suwalski_investing_server`, it belongs in the library.
@@ -51,7 +54,7 @@ AI-assisted coding live in `CLAUDE.md`; this document is about the repository it
 ## 3. Quality gates
 
 - **`./scripts/test-solution.sh` must be green before committing**: `ruff check`,
-  `ruff format --check`, and pytest in every Python project. Non-zero exit on any failure,
+  `ruff format --check`, pytest in every Python project, and `tsc --noEmit` for the web app. Non-zero exit on any failure,
   so it drops into CI unchanged.
 - **Formatting is `ruff format`, not taste.** Editors are configured to run it and ruff's
   fixes on save; the gate only verifies. Where a hand-made layout genuinely reads better —
@@ -67,7 +70,15 @@ AI-assisted coding live in `CLAUDE.md`; this document is about the repository it
   to a real-world result — treat a change in that number as a bug until proven otherwise.
 - A behavior change and its test update ship in the same commit.
 
-## 4. Adding a tool
+## 4. Charts
+
+Chart colour is validated, not eyeballed. The two series in the projection chart
+(your input / solved) were checked against the Catppuccin Mocha surface for
+colour-vision separation and contrast before shipping; a new chart with new colours gets
+the same treatment. Identity is never carried by colour alone — the legend, the hover panel
+and the table all repeat it.
+
+## 5. Adding a tool
 
 The reverse DCF is the first of several. A second one (comparables, owner earnings,
 whatever) follows the same shape:
@@ -77,9 +88,11 @@ whatever) follows the same shape:
 3. A router in `suwalski_investing_server/<tool>/router.py`, registered in `app.py`.
 4. CLI surface only if the tool is genuinely faster to drive from a terminal — an unused
    command is a maintenance cost.
-5. `PYTHON_PROJECTS` in `scripts/test-solution.sh` updated if a new project appeared.
+5. A UI entry is one object in `suwalski_investing_web/src/tools.ts` plus its component;
+   the shell needs no changes.
+6. `PYTHON_PROJECTS` in `scripts/test-solution.sh` updated if a new project appeared.
 
-## 5. Leaving no mess
+## 6. Leaving no mess
 
 Anything the repo writes outside its own directory has to be removable by
 `scripts/cleanup.sh`. When you add a tool that caches, logs or writes state somewhere else,
@@ -87,7 +100,7 @@ add the path to that script's `--system` section in the same commit — a trace 
 find is a trace nobody cleans. Repo-local scratch belongs in `.artifacts/`, which is
 gitignored and swept by the default run.
 
-## 6. Git hygiene
+## 7. Git hygiene
 
 - Branch per change, merged into `master`.
 - Lockfiles (`uv.lock`) are committed; `.venv/`, caches and generated output are not.

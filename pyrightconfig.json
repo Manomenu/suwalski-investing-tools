@@ -1,0 +1,5 @@
+{
+    "venvPath": ".",
+    "venv": ".venv",
+    "exclude": ["**/node_modules", "**/.venv", "**/__pycache__", "suwalski_investing_web"]
+}

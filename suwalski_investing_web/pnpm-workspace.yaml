@@ -1,0 +1,7 @@
+# pnpm 11 reads settings from here, not from package.json. esbuild (via Vite) ships a
+# platform binary and needs its postinstall to run; approving it keeps installs
+# non-interactive.
+allowBuilds:
+  esbuild: true
+onlyBuiltDependencies:
+  - esbuild

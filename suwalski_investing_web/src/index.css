@@ -1,0 +1,93 @@
+/* Self-hosted, no CDN. Inter carries the UI; JetBrains Mono carries every figure, so
+   columns of numbers line up and match the terminal this repo is otherwise driven from. */
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+@import "tailwindcss";
+
+/* Catppuccin Mocha. Chart series are the two accents that passed the palette
+   validator against the #1e1e2e surface (CVD ΔE 17.6, normal-vision 21.5). */
+@theme {
+    --color-crust: #11111b;
+    --color-mantle: #181825;
+    --color-base: #1e1e2e;
+    --color-surface0: #313244;
+    --color-surface1: #45475a;
+    --color-overlay0: #6c7086;
+    --color-subtext0: #a6adc8;
+    --color-subtext1: #bac2de;
+    --color-text: #cdd6f4;
+
+    --color-mauve: #cba6f7;
+    --color-blue: #89b4fa;
+    --color-peach: #fab387;
+    --color-green: #a6e3a1;
+    --color-red: #f38ba8;
+
+    --font-sans: "Inter Variable", system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+    /* 21:9 territory — where a third column stops being cramped. */
+    --breakpoint-wide: 2200px;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+}
+
+body {
+    background-color: var(--color-mantle);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+}
+
+/* The default scrollbar is a bright slab against a Mocha surface. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-surface1) transparent;
+}
+
+/* Range inputs get no useful default styling in any browser. */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--color-surface0);
+}
+
+input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--color-surface0);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+    border-radius: 9999px;
+    background: var(--color-mauve);
+    cursor: grab;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--color-mauve);
+    cursor: grab;
+}
+
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--color-subtext0);
+    outline-offset: 2px;
+}
