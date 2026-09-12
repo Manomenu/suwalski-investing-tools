@@ -23,7 +23,7 @@ tylko chmurą jest Proxmox.
 
 - **`suwalski-investing-tools`** (to repo) — kod, Dockerfile'e, CI, a od Fazy 5 także Helm
   chart. Repo **publikuje obrazy**; nie decyduje, co biegnie.
-- **`suwalski-homelab`** — Terraform (VM, k3s, Argo CD) i pliki Argo z pinowanymi tagami.
+- **`suwalski-platform`** — Terraform (VM, k3s, Argo CD) i pliki Argo z pinowanymi tagami.
   Repo **decyduje, co biegnie**.
 
 Chart mieszka przy kodzie, bo kształt deploymentu zmienia się razem z nim (nowy env var =
