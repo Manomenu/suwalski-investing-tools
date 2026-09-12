@@ -1,0 +1,40 @@
+# The local stand-in for the cluster. Same two images, wired the way the ingress will
+# wire them: the browser only ever talks to web, and /api is proxied on to server.
+#
+#   podman compose up --build   ->  http://localhost:8080
+#
+# This is a verification harness, not the deployment. The cluster gets the same images
+# from the registry; nothing here is the source of truth for how they run in production.
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: suwalski_investing_server/Dockerfile
+    # Machine-local settings — SEC_USER_AGENT above all — come from the same root .env
+    # the CLI already uses. In the cluster they arrive as a Secret instead.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Set after env_file so a host path in .env cannot point the cache outside the
+      # container. `environment` wins over `env_file`.
+      SUWALSKI_MARKET_CACHE: /var/cache/suwalski-market
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6100/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: suwalski_investing_web/Dockerfile
+    environment:
+      API_UPSTREAM: http://server:6100
+    ports:
+      - "8080:8080"
+    depends_on:
+      server:
+        condition: service_healthy

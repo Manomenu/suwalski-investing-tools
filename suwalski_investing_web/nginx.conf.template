@@ -1,0 +1,40 @@
+server {
+    listen 8080;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Liveness for the container itself. Deliberately independent of the API: the page
+    # is still servable when the server behind it is down.
+    location = /healthz {
+        access_log off;
+        add_header content-type text/plain always;
+        return 200 "ok\n";
+    }
+
+    # The browser only ever sees one origin, exactly as it does behind the vite proxy in
+    # development — which is why the API's CORS list never has to learn about deployments.
+    # The trailing slash on proxy_pass is what strips the /api prefix.
+    location /api/ {
+        proxy_pass ${API_UPSTREAM}/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # A cold year-history fetch off SEC EDGAR outruns nginx's 60s default.
+        proxy_read_timeout 120s;
+    }
+
+    # Vite emits content-hashed filenames, so these can never go stale.
+    location /assets/ {
+        add_header cache-control "public, max-age=31536000, immutable";
+    }
+
+    # Single page app. index.html must not be cached or a browser keeps asking for the
+    # previous release's asset names after a deploy.
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header cache-control "no-cache";
+    }
+}
