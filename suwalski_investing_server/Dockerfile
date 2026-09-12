@@ -43,8 +43,10 @@ ENV PYTHONUNBUFFERED=1
 # editable installs used in development. Here it is a wheel under site-packages, so the
 # root has to be stated outright or the .env lookup climbs into site-packages.
 ENV SUWALSKI_SOLUTION_ROOT=/app
-# Ticker snapshots are a 15-minute scratch cache, not state: a writable dir owned by the
-# app user is all it needs, and emptyDir is what backs it in Kubernetes.
+# Ticker snapshots and SEC year history. Not state — everything here is refetchable, so
+# losing it costs time rather than data — but the SEC half is expensive enough (3-5 MB a
+# company, slow to pull) that the cluster backs this path with a fixed-size disk instead
+# of letting it die with the pod. A writable dir owned by the app user is all it needs.
 ENV SUWALSKI_MARKET_CACHE=/var/cache/suwalski-market
 
 RUN install -d -o app -g app /var/cache/suwalski-market
