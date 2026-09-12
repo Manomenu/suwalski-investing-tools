@@ -17,6 +17,7 @@ tylko chmurą jest Proxmox.
 | 5 | Helm chart i Argo Application | Chart w tym repo, pinowane tagi w repo homelabu. Cache dostaje dysk 5 GB | Synced / Healthy, cache przeżywa restart poda |
 | 6 | Pętla deployu | Push → obraz → commit `chore(deploy)` w repo homelabu → Argo podmienia pody | Commit → nowy pod bez ręcznej komendy |
 | 7 | Widoczność i higiena | `kube-prometheus-stack`, alerty na Discorda, retencja obrazów w GHCR | Zapchany dysk → powiadomienie; stare tagi znikają same |
+| 8 | Nice to have | Rzeczy opcjonalne, bez terminu — patrz niżej | — |
 
 ## Dwa repo
 
@@ -56,3 +57,25 @@ Dlatego retencja nie jest pilna i świadomie czeka do Fazy 7 — wtedy będzie w
 liczby zamiast zgadywanego progu. Plan: reguła „trzymaj N ostatnich wersji, kasuj
 starsze", z wyjątkiem tagów, na które wskazuje aktualnie repo homelabu. Kasowanie obrazu,
 który stoi w klastrze, jest jedynym realnym sposobem, żeby sobie tym zaszkodzić.
+
+## Faza 8 — nice to have
+
+Nie blokują niczego i żadna nie ma terminu. Trafiają tu rzeczy, które świadomie odłożyliśmy,
+żeby nie zginęły w historii rozmowy.
+
+**Wyniki testów widoczne w pull requeście.** Dziś, żeby zobaczyć, co padło, trzeba wejść
+w logi przebiegu. Ładniej byłoby mieć podsumowanie na samej stronie pull requesta — tabelę
+z testami, czasami i tym, który konkretnie się wywalił.
+
+Czeka, bo **dotyka kodu repo, nie tylko CI**: `test-solution.sh` musiałby produkować raport
+w formacie maszynowym (`pytest --junitxml`), a to zmiana w skrypcie, którego dziś używamy
+lokalnie i w CI dokładnie tak samo. Dopiero na tym akcja raportująca mogłaby coś narysować.
+Trzeba więc najpierw rozstrzygnąć, czy skrypt ma zawsze zapisywać plik z wynikami, czy
+tylko na żądanie — i nie zepsuć przy tym prostoty „jedna komenda, ta sama u ciebie i w CI".
+
+**Przypięcie akcji do konkretnego SHA.** `@v4` to gałąź, którą autor może przesunąć.
+Przypięcie do skrótu commita jest odporniejsze, ale wymaga narzędzia, które to odświeża —
+czyli w praktyce razem z Dependabotem.
+
+**Skanowanie podatności obrazów.** Naturalne rozszerzenie CI, ale sensowne dopiero, gdy
+pipeline stoi i wiadomo, co właściwie skanujemy oraz co robimy ze znalezieniem.
