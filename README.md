@@ -24,9 +24,10 @@ GROWTH THE PRICE REQUIRES
 | `suwalski_investing_cli/` | `rdcf` — the same engine in the terminal, for fast iteration without a UI. |
 | `suwalski_investing_web/` | The UI: React 19 + Vite + Tailwind 4, Catppuccin Mocha. A static build — no Node server to run or deploy. Port 3000. |
 | `scripts/` | Entry points: `run/` (server, web), `infra/` (the container stack), plus the CLI, lint+test and cleanup. |
+| `.github/workflows/` | CI: lint + tests on every change, images pushed to GHCR from `master`. |
 | `compose.yaml` | Both images wired the way the cluster wires them, for local verification. |
 | `.artifacts/` | Local scratch: cached ticker snapshots. Gitignored. |
-| `docs/` | `reverse-dcf.md` (the model and its math), `guidelines.md` (repo rules). |
+| `docs/` | `reverse-dcf.md` (the model and its math), `guidelines.md` (repo rules), `guide/` (how the deployment was built, and why — in Polish). |
 
 Prerequisites: [uv](https://docs.astral.sh/uv/) and [pnpm](https://pnpm.io/). The Python
 side is one **uv workspace**: `uv sync` at the root builds a single `.venv` that knows every
