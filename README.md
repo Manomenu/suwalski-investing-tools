@@ -24,7 +24,7 @@ GROWTH THE PRICE REQUIRES
 | `suwalski_investing_cli/` | `rdcf` — the same engine in the terminal, for fast iteration without a UI. |
 | `suwalski_investing_web/` | The UI: React 19 + Vite + Tailwind 4, Catppuccin Mocha. A static build — no Node server to run or deploy. Port 3000. |
 | `scripts/` | Entry points: run the server, run the CLI, lint+test everything. |
-| `infrastructure/` | Kubernetes / Terraform, once there is something worth deploying. See its README. |
+| `compose.yaml` | Both images wired the way the cluster wires them, for local verification. |
 | `.artifacts/` | Local scratch: cached ticker snapshots. Gitignored. |
 | `docs/` | `reverse-dcf.md` (the model and its math), `guidelines.md` (repo rules). |
 
@@ -119,7 +119,7 @@ reachable from Ctrl+P. That distinction exists because VS Code has no "show hidd
 toggle for the explorer — a hidden file is genuinely hard to get back to, so only files you
 never need get that treatment. The three
 projects appear as their own roots *and* inside "repo root", which is what lets that last
-entry carry `docs/`, `scripts/` and `infrastructure/`; drop it from `folders` if the
+entry carry `docs/` and `scripts/`; drop it from `folders` if the
 duplication bothers you more than the convenience is worth.
 
 `.vscode/launch.json` holds debug configurations, each pinned to its project's own
@@ -153,6 +153,32 @@ Clean up after yourself:
 lands outside the repo: pytest's `/tmp` directories, yfinance's timezone cache, this repo's
 VS Code workspace storage, and — after asking — a prune of the shared uv cache. Nothing
 under `/var` is touched, because nothing of ours goes there.
+
+## Run it in containers
+
+The two deployables as the cluster will run them — the server as a wheel on a slim
+Python base, the web build as static files behind nginx:
+
+```bash
+podman compose up --build     # http://localhost:8080
+```
+
+Only `web` publishes a port. The browser talks to one origin and nginx proxies `/api` on
+to the server, stripping the prefix — the same shape the vite dev proxy has, which is why
+the API's CORS list never needs to know about a deployment. Machine-local settings
+(`SEC_USER_AGENT` above all) are read from the root `.env`; in the cluster they arrive as
+a Secret instead.
+
+Both images build from the **solution root**, because the server resolves the library
+through a uv workspace path:
+
+```bash
+podman build -f suwalski_investing_server/Dockerfile -t suwalski-server .
+podman build -f suwalski_investing_web/Dockerfile -t suwalski-web .
+```
+
+Neither runs as root, and neither holds state: the snapshot cache is a 15-minute scratch
+directory, so the server stays horizontally scalable with no volume attached.
 
 ## The inputs
 

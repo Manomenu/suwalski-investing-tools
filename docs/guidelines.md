@@ -117,5 +117,6 @@ gitignored and swept by the default run.
 - Lockfiles (`uv.lock`) are committed; `.venv/`, caches and generated output are not.
 - Scripts: `set -euo pipefail`, spaces not tabs, `podman` (not `docker`) once containers
   appear, `bash -n` anything you touch.
-- Infrastructure comes later on purpose (see `infrastructure/README.md`); don't add
-  Dockerfiles or manifests until something actually needs to be deployed.
+- Each deployable owns its `Dockerfile`, built from the solution root so the uv
+  workspace resolves. Cluster manifests and Terraform live in the homelab repo, not
+  here: this repo publishes images, it does not decide what runs.
