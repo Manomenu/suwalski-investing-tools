@@ -22,9 +22,14 @@ RUN pnpm build
 
 FROM docker.io/nginxinc/nginx-unprivileged:1.29-alpine
 
-# The entrypoint expands templates with envsubst. Without this filter it would also eat
-# nginx's own $host, $uri and $scheme.
+# At container start the image's entrypoint runs envsubst over /etc/nginx/templates/ and
+# writes the result to /etc/nginx/conf.d/ — which is how ${API_UPSTREAM} below becomes a
+# real address without rebuilding. The filter narrows that to a whitelist of one: nothing
+# else the environment happens to carry can rewrite this config. Without it envsubst
+# expands every name present in the environment, and nginx's own $host and $scheme
+# survive only as long as nothing is named after them.
 ENV NGINX_ENVSUBST_FILTER="^API_UPSTREAM$"
+# Matches the service name in compose; the cluster overrides it with the Service address.
 ENV API_UPSTREAM="http://server:6100"
 
 COPY --from=builder /app/dist /usr/share/nginx/html

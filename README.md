@@ -23,7 +23,7 @@ GROWTH THE PRICE REQUIRES
 | `suwalski_investing_server/` | FastAPI over the engine. Exists so a browser dashboard can call it later. Port 6100. |
 | `suwalski_investing_cli/` | `rdcf` — the same engine in the terminal, for fast iteration without a UI. |
 | `suwalski_investing_web/` | The UI: React 19 + Vite + Tailwind 4, Catppuccin Mocha. A static build — no Node server to run or deploy. Port 3000. |
-| `scripts/` | Entry points: run the server, run the CLI, lint+test everything. |
+| `scripts/` | Entry points: `run/` (server, web), `infra/` (the container stack), plus the CLI, lint+test and cleanup. |
 | `compose.yaml` | Both images wired the way the cluster wires them, for local verification. |
 | `.artifacts/` | Local scratch: cached ticker snapshots. Gitignored. |
 | `docs/` | `reverse-dcf.md` (the model and its math), `guidelines.md` (repo rules). |
@@ -69,8 +69,8 @@ segment covers is handed to the solver. Add `--json` for the raw result.
 Browser:
 
 ```bash
-./scripts/run-server.sh   # API on 6100
-./scripts/run-web.sh      # UI on http://localhost:3000, proxying /api to the server
+./scripts/run/server.sh   # API on 6100
+./scripts/run/web.sh      # UI on http://localhost:3000, proxying /api to the server
 ```
 
 The page is a left rail of tools and one open tool — no title bar, no chrome. Assumptions
@@ -87,7 +87,7 @@ figure — both self-hosted, no CDN — so columns of numbers line up.
 HTTP API:
 
 ```bash
-./scripts/run-server.sh          # Swagger UI at http://localhost:6100/docs
+./scripts/run/server.sh      # Swagger UI at http://localhost:6100/docs
 
 # facts for the form
 curl -s localhost:6100/market/NVDA | jq '{price, shares_outstanding, revenue_ttm, fcf_ttm}'
@@ -160,8 +160,14 @@ The two deployables as the cluster will run them — the server as a wheel on a 
 Python base, the web build as static files behind nginx:
 
 ```bash
-podman compose up --build     # http://localhost:8080
+./scripts/infra/up.sh         # http://localhost:8080
+./scripts/infra/list.sh       # what is up, on which ports
+./scripts/infra/down.sh       # stop it
 ```
+
+`up.sh --rebuild` ignores the layer cache and builds both images from zero — for when you
+suspect a stale layer rather than a stale source file. `list.sh` says what is up, on which
+ports, and where to open it.
 
 Only `web` publishes a port. The browser talks to one origin and nginx proxies `/api` on
 to the server, stripping the prefix — the same shape the vite dev proxy has, which is why
