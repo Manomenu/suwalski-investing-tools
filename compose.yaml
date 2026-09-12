@@ -1,7 +1,7 @@
 # The local stand-in for the cluster. Same two images, wired the way the ingress will
 # wire them: the browser only ever talks to web, and /api is proxied on to server.
 #
-#   podman compose up --build   ->  http://localhost:8080
+#   ./scripts/infra/up.sh   ->  http://localhost:8080
 #
 # This is a verification harness, not the deployment. The cluster gets the same images
 # from the registry; nothing here is the source of truth for how they run in production.
