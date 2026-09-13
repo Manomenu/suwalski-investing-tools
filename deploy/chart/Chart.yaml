@@ -1,0 +1,12 @@
+apiVersion: v2
+name: suwalski-investing-tools
+description: Reverse-DCF valuation toolkit — API plus a static web UI in front of it
+type: application
+
+# Wersja samego charta: zmienia się, gdy zmienia się KSZTAŁT wdrożenia (nowy port,
+# nowa zmienna, inny wolumen) — a nie gdy zmienia się kod aplikacji.
+version: 0.1.0
+
+# Wersja aplikacji jest tylko informacją. To, co naprawdę biegnie, rozstrzyga tag obrazu
+# narzucony przez repo platformy.
+appVersion: "0.1.0"
