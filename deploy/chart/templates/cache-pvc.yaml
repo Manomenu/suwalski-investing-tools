@@ -1,0 +1,19 @@
+{{- if .Values.cache.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "app.name" . }}-cache
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+  # Argo domyślnie kasuje to, czego już nie ma w gicie. Tu tego nie chcemy: cache ma
+  # przeżyć zmianę wersji aplikacji. Utrata nie byłaby groźna, ale byłaby bez powodu.
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  accessModes:
+    # Jeden pod naraz. local-path nie umie inaczej, a przy jednej replice to bez znaczenia.
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.cache.size }}
+{{- end }}

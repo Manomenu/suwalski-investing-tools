@@ -94,22 +94,29 @@ w repo platformy.
 
 ```
 scripts/
-├── kubeconfig.sh              pobiera kubeconfig i od razu sprawdza
-├── kubectl/
-│   ├── setup.sh               ustawia KUBECONFIG: na stałe i w tej powłoce
-│   └── list-nodes.sh          węzły + obciążenie, działa bez KUBECONFIG
-└── tofu/
-    ├── validate-and-format.sh fmt + validate, lokalnie, bez Proxmoksa
-    ├── plan.sh                pokazuje, co zrobi
-    └── apply.sh               robi to; --yes-man pomija pytanie
+├── .internal/tofu.sh            wspólna logika, nie wołasz jej wprost
+├── cluster/
+│   ├── tofu-{validate,plan,apply}.sh
+│   └── kubectl-setup.sh         pobiera kubeconfig i ustawia KUBECONFIG
+├── platform/
+│   ├── tofu-{validate,plan,apply}.sh
+│   └── argocd-password.sh
+└── k9s/logs.sh                  log samego k9s
 ```
+
+Podział idzie po **warstwie**, nie po narzędziu — pracujesz nad klastrem albo nad tym, co
+w nim stoi, a nie „nad tofu". Nakładki w `cluster/` i `platform/` mają po jednej linii;
+cała logika siedzi w `.internal/tofu.sh`.
+
+**Zaglądania do klastra tu nie ma i nie będzie** — od tego jest k9s. Skrypt, który
+opakowuje `kubectl get`, to gorsza wersja `:po`.
 
 **Czym jest kubeconfig:** plik mówiący `kubectl`, gdzie jest klaster, kim jesteś i jak się
 uwierzytelnić. Bez niego `kubectl` zakłada klaster lokalny i wali w `localhost:8080` —
 stąd błąd *„connection to the server localhost:8080 was refused"*. Nie znaczy on, że
 klaster leży, tylko że `kubectl` nie wie o jego istnieniu.
 
-**Czemu `setup.sh` trzeba sourcować:** proces potomny nie może ustawić zmiennej w powłoce
+**Czemu `kubectl-setup.sh` trzeba sourcować:** proces potomny nie może ustawić zmiennej w powłoce
 rodzica. Uruchomiony normalnie skrypt zapisze fragment dla nowych powłok; `source` ustawi
 też bieżącą. Uwaga na `set -euo pipefail` w sourcowanym pliku — obowiązywałby twoją
 interaktywną powłokę, więc skrypt włącza go tylko przy normalnym uruchomieniu.

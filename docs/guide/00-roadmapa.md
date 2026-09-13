@@ -13,7 +13,7 @@ tylko chmurą jest Proxmox.
 | 1 ✅ | Konteneryzacja | Dwa obrazy, jeden origin, compose jako harness | `./scripts/infra/up.sh` → strona i solver działają |
 | 2 ✅ | CI w GitHub Actions | Lint i testy na PR; na masterze obrazy do GHCR z tagiem `sha-<commit>` | Tag widoczny w Packages, testy blokują merge |
 | 3 ✅ | Terraform: VM i k3s | `bpg/proxmox` stawia VM z cloud-init, cloud-init instaluje k3s | k9s z laptopa pokazuje węzeł Ready |
-| 4 | Terraform: Argo CD | Ostatnia rzecz robiona Terraformem — dalej klaster zarządza sobą sam | UI Argo dostępne przez Tailscale |
+| 4 ✅ | Terraform: Argo CD | Ostatnia rzecz robiona Terraformem — dalej klaster zarządza sobą sam | UI Argo odpowiada pod `argocd.k8s.suwalski.internal` |
 | 5 | Helm chart i Argo Application | Chart w tym repo, pinowane tagi w repo homelabu. Cache dostaje dysk 5 GB | Synced / Healthy, cache przeżywa restart poda |
 | 6 | Pętla deployu | Push → obraz → commit `chore(deploy)` w repo homelabu → Argo podmienia pody | Commit → nowy pod bez ręcznej komendy |
 | 7 | Widoczność i higiena | `kube-prometheus-stack`, alerty na Discorda, retencja obrazów w GHCR | Zapchany dysk → powiadomienie; stare tagi znikają same |
