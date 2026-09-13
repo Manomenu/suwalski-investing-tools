@@ -1,0 +1,42 @@
+# Wartości domyślne. Tag obrazu celowo pusty — narzuca go repo platformy, bo to ono
+# decyduje, co biegnie. Zostawiony tutaj na sztywno oznaczałby, że commit z kodem jest
+# jednocześnie wdrożeniem.
+
+image:
+  registry: ghcr.io/manomenu/suwalski-investing-tools
+  tag: "" # np. sha-a1b2c3d — podawane przez Argo Application
+  pullPolicy: IfNotPresent
+
+server:
+  replicas: 1
+  port: 6100
+  resources:
+    requests: { cpu: 50m, memory: 192Mi }
+    limits: { memory: 512Mi }
+
+web:
+  replicas: 1
+  port: 8080
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+
+ingress:
+  enabled: true
+  className: traefik
+  host: rdcf.k8s.suwalski.internal
+
+# Snapshoty z Yahoo i historia ze SEC. Nie są stanem — wszystko da się pobrać ponownie,
+# więc utrata kosztuje czas, nie dane. 200Mi to około 80 spółek przy ~2,5 MB na spółkę.
+#
+# Uwaga: local-path NIE pozwala powiększyć dysku po utworzeniu. Gdyby zabrakło miejsca,
+# kasuje się wolumen i tworzy większy — bezpiecznie, bo to cache.
+cache:
+  enabled: true
+  size: 200Mi
+
+# SEC odrzuca żądania bez identyfikacji. Zawiera adres e-mail, więc nie leży w repo —
+# sekret zakłada się raz, poleceniem: suwalski-platform/scripts/setup.sh
+secret:
+  name: suwalski-sec
+  key: SEC_USER_AGENT

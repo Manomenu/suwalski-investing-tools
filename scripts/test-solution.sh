@@ -36,6 +36,16 @@ web_typecheck() {
     pnpm exec tsc --noEmit
 }
 
+helm_chart() {
+    # `lint` łapie błędy składni, ale przechodzi nawet wtedy, gdy szablon nigdy nie
+    # wyrenderuje się poprawnie. `template` faktycznie go składa — i to on wyłapie
+    # brakujące pole albo złe wcięcie. Tag podajemy zmyślony, bo tu sprawdzamy kształt,
+    # a nie to, czy obraz istnieje.
+    cd "$ROOT"
+    helm lint deploy/chart --set image.tag=sha-lint --quiet
+    helm template lint-check deploy/chart --set image.tag=sha-lint >/dev/null
+}
+
 pytest_project() {
     local project="$1"
     if [ ! -d "$ROOT/$project/tests" ]; then
@@ -51,6 +61,14 @@ for project in "${PYTHON_PROJECTS[@]}"; do
     run_step "pytest $project" pytest_project "$project"
 done
 run_step "typecheck suwalski_investing_web (tsc)" web_typecheck
+
+# helm bywa nieobecny na świeżej maszynie. Pomijamy z wyraźną adnotacją zamiast raportować
+# PASS — cicho pominięty krok jest gorszy niż brak kroku.
+if command -v helm >/dev/null 2>&1; then
+    run_step "helm chart (lint + template)" helm_chart
+else
+    REPORT+=("SKIP  helm chart — brak helm (jest w ~/.dotfiles/fedora/nix/home.nix)")
+fi
 
 echo
 echo "================ test-solution report ================"

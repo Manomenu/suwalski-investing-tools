@@ -47,6 +47,10 @@ jobs:
           cache: pnpm
           cache-dependency-path: suwalski_investing_web/pnpm-lock.yaml
 
+      # The script skips the chart check when helm is absent, so CI has to provide it —
+      # otherwise the one place that should always run it would quietly not.
+      - uses: azure/setup-helm@v4
+
       # Deliberately the same script the repo runs locally. CI that runs something else is
       # CI that can disagree with your machine, and then neither of you is trustworthy.
       - run: ./scripts/test-solution.sh
