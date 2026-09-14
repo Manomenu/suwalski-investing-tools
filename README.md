@@ -223,10 +223,19 @@ the server, stripping the prefix. Machine-local settings come from the root `.en
 cluster they arrive as a Secret instead. Neither image runs as root, and neither holds
 state — the snapshot cache is scratch, so the server scales out with no volume attached.
 
-For Kubernetes there is a Helm chart under [`deploy/chart/`](deploy/chart), deployed by Argo
-CD from a separate platform repo; the image tag is deliberately empty here, because the
-platform decides what runs. CI lints and tests every change and pushes both images to GHCR
-from `master`.
+## Deployed by GitOps
+
+For Kubernetes there is a Helm chart under [`deploy/chart/`](deploy/chart). Nothing here
+runs `kubectl`: [Argo CD](https://argo-cd.readthedocs.io/) watches a separate platform repo
+and reconciles the cluster to match it. CI lints and tests every change and pushes both
+images to GHCR from `master`; the platform repo pins which tag is live, which is why
+`image.tag` is deliberately empty in this chart.
+
+![Argo CD showing the application tree — Ingress, two Services, two Deployments and the cache volume, all Healthy and Synced](docs/images/argocd-application-tree.png)
+
+The tree above is what one deployment looks like from Argo's side. Two ReplicaSets per
+Deployment is normal: the older one is kept at zero replicas so a rollback costs seconds
+instead of a rebuild.
 
 ## When something looks wrong
 
