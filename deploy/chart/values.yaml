@@ -36,7 +36,7 @@ cache:
   size: 200Mi
 
 # SEC odrzuca żądania bez identyfikacji. Zawiera adres e-mail, więc nie leży w repo —
-# sekret zakłada się raz, poleceniem: suwalski-platform/scripts/setup.sh
+# sekret zakłada się raz, poleceniem: suwalski-platform/scripts/projects/suwalski-investing-tools/setup.sh
 secret:
   name: suwalski-sec
   key: SEC_USER_AGENT
