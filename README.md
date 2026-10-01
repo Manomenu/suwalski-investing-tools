@@ -18,7 +18,8 @@ A normal DCF asks you to guess every year and hands back a valuation you tuned u
 liked it. This asks the opposite and hands back **one number to argue with**: is 4.76% for
 years 4-10 plausible for this company, or not?
 
-Same engine, three ways to reach it: `rdcf` in a terminal, a browser UI, and an HTTP API.
+Same engine, four ways to reach it: `rdcf` in a terminal, a browser UI, an HTTP API, and an
+MCP server for Claude Code.
 
 ## What it does
 
@@ -151,6 +152,7 @@ scroll, and at 21:9 (>= 2200px) it moves beside the chart instead of under it.
 | `GET /market/{ticker}` | The observable facts for a symbol, plus reported history. `?refresh=true` skips the cache. |
 | `POST /valuation/reverse-dcf` | The valuation itself. No network, no assumptions of its own. |
 | `GET /health` | Liveness, for the container and the cluster. |
+| `POST /mcp` | The same tools over MCP — see [Use it from Claude Code](#use-it-from-claude-code). |
 
 ```sh
 curl -s localhost:6100/market/NVDA | jq '{price, shares_outstanding, revenue_ttm, fcf_ttm}'
@@ -165,6 +167,29 @@ curl -s localhost:6100/valuation/reverse-dcf -H 'content-type: application/json'
 
 Status codes: `422` the inputs parsed but the model cannot answer, `404` unknown ticker,
 `502` the data provider failed — which is upstream of you, not your fault.
+
+## Use it from Claude Code
+
+The server also speaks [MCP](https://modelcontextprotocol.io/) (Streamable HTTP) at `/mcp`,
+so an assistant can call the same engine mid-conversation:
+
+| Tool | What it returns |
+| --- | --- |
+| `fcf_margin_history` | Reported FCF margin per fiscal year, oldest first. |
+| `revenue_history` | Reported revenue and year-over-year growth per fiscal year. |
+| `reverse_dcf` | The solved growth plus the full projection. A ticker fills the facts; explicit values win. |
+
+The server ships instructions telling the model when to reach for these, to look at the
+history before picking a margin, and that rates are decimals.
+
+```sh
+# the cluster (LAN only, no auth — *.k8s.suwalski.internal never leaves the house)
+claude mcp add --transport http --scope user suwalski-investing \
+    http://suwalski-investing-tools.k8s.suwalski.internal/mcp
+
+# or a local server from ./scripts/run/server.sh
+claude mcp add --transport http --scope user suwalski-investing-local http://localhost:6100/mcp
+```
 
 ## The inputs
 
@@ -259,7 +284,7 @@ The CLI says what happened on stderr and exits with a code you can branch on:
 | Path | What it is |
 | --- | --- |
 | `suwalski_investing_library/` | The valuation engine, the pydantic contracts, and `marketdata/`. The engine half is stdlib + pydantic only — importing it pulls in no scraper, and a test enforces that. |
-| `suwalski_investing_server/` | FastAPI over the engine. Port 6100. |
+| `suwalski_investing_server/` | FastAPI over the engine, plus the MCP server at `/mcp`. Port 6100. |
 | `suwalski_investing_cli/` | `rdcf` — the same engine in the terminal. |
 | `suwalski_investing_web/` | React 19 + Vite + Tailwind 4, Catppuccin Mocha. A static build; no Node server to deploy. Port 3000 in dev. |
 | `scripts/` | Entry points: `run/`, `infra/`, plus the CLI, lint+test and cleanup. |
