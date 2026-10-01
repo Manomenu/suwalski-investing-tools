@@ -8,6 +8,7 @@ dependencies = [
     "fastapi>=0.115",              # HTTP API + OpenAPI schema for the future dashboard
     "pydantic-settings>=2.6",      # settings loaded from the layered .env files
     "uvicorn[standard]>=0.30",     # ASGI server
+    "mcp>=2.2",                    # MCP server for Claude Code at /mcp (2.x: MCPServer, not FastMCP)
 ]
 
 [build-system]

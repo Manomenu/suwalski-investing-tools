@@ -25,6 +25,10 @@ ingress:
   enabled: true
   className: traefik
   host: rdcf.k8s.suwalski.internal
+  # Serwer MCP dla asystenta (Claude Code): <mcpHost>/mcp prosto do serwera, z pominięciem
+  # nginx. Osobny host, bo to osobny klient — nie przeglądarka. Tylko LAN, bez autoryzacji:
+  # *.k8s.suwalski.internal nie wychodzi przez tunel. Puste = bez tej reguły.
+  mcpHost: suwalski-investing-tools.k8s.suwalski.internal
 
 # Snapshoty z Yahoo i historia ze SEC. Nie są stanem — wszystko da się pobrać ponownie,
 # więc utrata kosztuje czas, nie dane. 200Mi to około 80 spółek przy ~2,5 MB na spółkę.
