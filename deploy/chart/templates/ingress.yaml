@@ -8,8 +8,8 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-    # Tylko web. Ruch na /api rozstrzyga nginx wewnątrz tego poda — jedna reguła zamiast
-    # dwóch, a przeglądarka widzi jeden origin, więc CORS nie wchodzi do gry.
+    # Przeglądarka idzie tylko do web. Ruch na /api rozstrzyga nginx wewnątrz tego poda —
+    # jedna reguła zamiast dwóch, a przeglądarka widzi jeden origin, więc CORS nie wchodzi do gry.
     - host: {{ .Values.ingress.host }}
       http:
         paths:
@@ -20,4 +20,17 @@ spec:
                 name: {{ include "app.name" . }}-web
                 port:
                   number: 80
+    {{- with .Values.ingress.mcpHost }}
+    # Asystent idzie prosto do serwera: MCP to nie przeglądarka, origin go nie dotyczy.
+    - host: {{ . }}
+      http:
+        paths:
+          - path: /mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.name" $ }}-server
+                port:
+                  number: {{ $.Values.server.port }}
+    {{- end }}
 {{- end }}

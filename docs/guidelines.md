@@ -96,7 +96,8 @@ whatever) follows the same shape:
 
 1. Contracts in `suwalski_investing_library/contracts/<tool>.py`.
 2. Pure engine in `suwalski_investing_library/<tool>/`, with its own unit tests.
-3. A router in `suwalski_investing_server/<tool>/router.py`, registered in `app.py`.
+3. A router in `suwalski_investing_server/<tool>/router.py`, registered in `app.py`, and —
+   if an assistant should reach it — a tool in `suwalski_investing_server/mcp/server.py`.
 4. CLI surface only if the tool is genuinely faster to drive from a terminal — an unused
    command is a maintenance cost.
 5. A UI entry is one object in `suwalski_investing_web/src/tools.ts` plus its component;
