@@ -7,14 +7,12 @@ on:
   push:
     branches: [master]
   pull_request:
-  # Github interface "run" button
-  # (u nas reaguje jak push, bo != pull_request, pozwala ponowic build bez pustego commita)
   workflow_dispatch:
 
 # A newer push to the same branch makes the older run irrelevant, so stop paying for it.
 # Master is the exception: those runs publish images and must be allowed to finish.
 concurrency:
-  group: ci-${{ github.ref }} # ${{}} - wyrazenie liczone przez githuba przed odpaleniem kroku - tu dana o przebiegu
+  group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 # The floor for every job. The one job that needs more asks for more, where it needs it.
@@ -22,14 +20,42 @@ permissions:
   contents: read
 
 env:
-  # The same interpreter the runtime image ships, so the tests run on what production runs.
+  # The same interpreter the runtime image ships (and .python-version pins locally), so the
+  # tests run on what production runs.
   UV_PYTHON: "3.14"
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    # The tests run against a real PostgreSQL, the same one `just db up` starts locally,
+    # on the same port, so the tests need no CI-specific settings.
+    services:
+      postgres:
+        image: docker.io/library/postgres:17.11
+        env:
+          POSTGRES_USER: suwinvtools
+          POSTGRES_PASSWORD: suwinvtools
+          POSTGRES_DB: suwinvtools
+        ports:
+          - 5473:5432
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U suwinvtools"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          # gitleaks (in check.sh) scans the whole history: a secret removed later is still published.
+          fetch-depth: 0
+
+      # Pinned like every tool here; the same version the platform repo uses.
+      - name: Install gitleaks
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz" |
+            tar -xz -C "$HOME/.local/bin" gitleaks
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - uses: astral-sh/setup-uv@v6
         with:
@@ -39,13 +65,13 @@ jobs:
       # package.json at the repo root for the action to find on its own.
       - uses: pnpm/action-setup@v4
         with:
-          package_json_file: suwalski_investing_web/package.json
+          package_json_file: suwinvtools_web/package.json
 
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: pnpm
-          cache-dependency-path: suwalski_investing_web/pnpm-lock.yaml
+          cache-dependency-path: suwinvtools_web/pnpm-lock.yaml
 
       # The script skips the chart check when helm is absent, so CI has to provide it —
       # otherwise the one place that should always run it would quietly not.
@@ -53,11 +79,63 @@ jobs:
 
       # Deliberately the same script the repo runs locally. CI that runs something else is
       # CI that can disagree with your machine, and then neither of you is trustworthy.
-      - run: ./scripts/test-solution.sh
+      - run: ./scripts/.internal/check.sh
+
+  # The whole app in a real browser (suwinvtools_web/src/**/*.e2e.ts). Same script as `just e2e`;
+  # here PostgreSQL is a service.
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: docker.io/library/postgres:17.11
+        env:
+          POSTGRES_USER: suwinvtools
+          POSTGRES_PASSWORD: suwinvtools
+          POSTGRES_DB: suwinvtools
+        ports:
+          - 5473:5432
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U suwinvtools"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: suwinvtools_web/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: suwinvtools_web/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: suwinvtools_web
+
+      # The browser and the system libraries it needs, at the version @playwright/test pins.
+      - run: pnpm exec playwright install --with-deps chromium
+        working-directory: suwinvtools_web
+
+      - run: ./scripts/.internal/e2e.sh
+
+      # Screenshots, traces and the HTML report of a failed run, to see what the browser saw.
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: .artifacts/e2e/
+          retention-days: 14
 
   build:
     # Nothing is built, let alone published, until the suite is green.
-    needs: test
+    needs: [test, e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -68,9 +146,9 @@ jobs:
       matrix:
         include:
           - image: server
-            dockerfile: suwalski_investing_server/Dockerfile
+            dockerfile: suwinvtools_server/Dockerfile
           - image: web
-            dockerfile: suwalski_investing_web/Dockerfile
+            dockerfile: suwinvtools_web/Dockerfile
     steps:
       - uses: actions/checkout@v4
 
@@ -98,8 +176,8 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
-          # The solution root, because the server resolves the library through a uv
-          # workspace path and the only lockfile lives up here.
+          # The solution root, because the only lockfile (uv.lock) and the uv workspace
+          # manifest live up here.
           context: .
           file: ${{ matrix.dockerfile }}
           # A pull request proves the image builds. Only master publishes it.

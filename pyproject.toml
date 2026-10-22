@@ -2,29 +2,78 @@
 # root: a single interpreter that knows every package, which is what lets VS Code (and
 # pyright) work from a plain folder instead of a multi-root workspace file.
 [project]
-name = "suwalski-investing-tools"
+name = "suwinvtools"
 version = "0.1.0"
-description = "Homelab valuation toolkit"
+description = "suwinvtools — homelab investing toolkit (reverse DCF, AI cycle signals)"
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "suwalski-investing-library[tickers]",
-    "suwalski-investing-server",
-    "suwalski-investing-cli",
+    "suwinvtools-library[tickers]",
+    "suwinvtools-server",
+    "suwinvtools-cli",
 ]
 
 [tool.uv]
 package = false
 
 [tool.uv.workspace]
-members = ["suwalski_investing_library", "suwalski_investing_server", "suwalski_investing_cli"]
+members = ["suwinvtools_library", "suwinvtools_server", "suwinvtools_cli"]
 
 [tool.uv.sources]
-suwalski-investing-library = { workspace = true }
-suwalski-investing-server = { workspace = true }
-suwalski-investing-cli = { workspace = true }
+suwinvtools-library = { workspace = true }
+suwinvtools-server = { workspace = true }
+suwinvtools-cli = { workspace = true }
 
 [dependency-groups]
 dev = [
     "pytest>=8.0",
-    "httpx>=0.27",  # fastapi.testclient
+    "httpx2>=2.13",       # fastapi.testclient — starlette moved off httpx
+    "pyright>=1.1.400",   # strict type check, same config the editor reads (pyrightconfig.json)
+    "import-linter>=2.1", # the import contracts below — part of `just check`
+]
+
+[tool.pytest.ini_options]
+addopts = ["--strict-markers", "--strict-config", "-m", "not live"]
+xfail_strict = true
+markers = ["live: calls a real outside service — left out of the gate, run by scripts/.internal/live-check.sh"]
+
+# Import contracts: which part may import which. A layer may import the layers below it,
+# never the ones above; "a | b" are siblings that must not import each other.
+#
+# EVERY top-level module and package of suwinvtools_server has a place in the first
+# contract — suwinvtools_server/tests/test_contracts.py fails the gate when one is missing.
+# A new feature therefore lands here in the same change (AGENTS.md, "Import contracts").
+[tool.importlinter]
+root_packages = ["suwinvtools_server", "suwinvtools_library"]
+
+[[tool.importlinter.contracts]]
+name = "Server layers: features above the plumbing they use"
+type = "layers"
+layers = [
+    "suwinvtools_server.app",
+    "suwinvtools_server.mcp | suwinvtools_server.signals | suwinvtools_server.market | suwinvtools_server.valuation",
+    "suwinvtools_server.db",
+    "suwinvtools_server.settings",
+]
+
+[[tool.importlinter.contracts]]
+name = "Inside signals: HTTP and the job > checks > what they read and write > models"
+type = "layers"
+containers = ["suwinvtools_server.signals"]
+layers = [
+    "api | job",
+    "setup | runner",
+    "checks",
+    "store | sources | llm | discord",
+    "model",
+]
+
+# The engine computes; marketdata fetches. Nothing in the engine reaches for the network.
+[[tool.importlinter.contracts]]
+name = "Library: fetching above the engine above the contracts"
+type = "layers"
+layers = [
+    "suwinvtools_library.marketdata",
+    "suwinvtools_library.valuation",
+    "suwinvtools_library.contracts",
+    "suwinvtools_library.constants",
 ]

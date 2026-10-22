@@ -43,7 +43,7 @@ terminal assumption. Saying so is more useful than returning the nearest bound.
 
 ## Worked example
 
-The regression test in `suwalski_investing_library/tests/test_reverse.py` reproduces a
+The regression test in `suwinvtools_library/tests/test_reverse.py` reproduces a
 published reverse-DCF screen for NVDA: $224.03 price, 24.40B shares, TTM FCF $127.01B at a
 42% margin, optimized FCF $106.04B at a 35% margin, 55% growth for years 1-3, 10% discount
 rate, 3% terminal growth, 10-year horizon.

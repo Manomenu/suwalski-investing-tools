@@ -1,4 +1,6 @@
-# suwalski-investing-tools
+# suwinvtools
+
+*suwalski-investing-tools — internally `suwinvtools`: packages, database, chart, `suwinvtools.k8s.suwalski.internal`.*
 
 **What growth is today's price already paying for?** That is the question this toolkit
 answers. You pin the growth you actually have a view on — "55% for the next three years" —
@@ -20,6 +22,10 @@ years 4-10 plausible for this company, or not?
 
 Same engine, four ways to reach it: `rdcf` in a terminal, a browser UI, an HTTP API, and an
 MCP server for Claude Code.
+
+Next to it runs a second tool: **[AI cycle signals](#ai-cycle-signals)** — a monthly job that
+reads filings, GPU prices, token prices and the news for signs that the AI boom is turning, and
+sends warnings to one Discord channel and reassurances to another.
 
 ## What it does
 
@@ -53,10 +59,11 @@ the rest unlock the parts of the repo you may never touch.
 | --- | --- | --- | --- |
 | [uv](https://docs.astral.sh/uv/) | any | everything Python | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | Python | 3.12-3.14 | everything Python | uv downloads it if you have none |
+| [just](https://just.systems/) | any | every command below | `sudo dnf install just` |
 | [pnpm](https://pnpm.io/) + Node | Node 24 | the browser UI | `corepack enable pnpm` |
-| podman + podman compose | any | the container stack | `sudo dnf install podman podman-compose` |
-| jq | any | `scripts/infra/list.sh` | `sudo dnf install jq` |
-| helm | 3.x | the chart check inside `test-solution.sh` | [helm.sh](https://helm.sh/docs/intro/install/) — skipped, with a note, when absent |
+| podman + podman compose | any | PostgreSQL (`just db up`) and the container stack | `sudo dnf install podman podman-compose` |
+| jq | any | `just status` | `sudo dnf install jq` |
+| helm, shellcheck, gitleaks | any | the full gate (`just check`) | skipped, with a note, when absent; CI always has them |
 
 Built and tested on Fedora 44 with Python 3.14. CI runs the same script on Ubuntu.
 
@@ -65,13 +72,14 @@ Built and tested on Fedora 44 with Python 3.14. CI runs the same script on Ubunt
 ```sh
 git clone git@github.com:Manomenu/suwalski-investing-tools.git
 cd suwalski-investing-tools
-uv sync                  # one .venv at the root that knows all three Python packages
-cp .env.example .env     # then set SEC_USER_AGENT — see below
+just sync                # one .venv for the three Python packages, the web deps, the git hooks
+just db up               # local PostgreSQL on :5473 (the server and the signals need it)
+cp .env.example .env     # then set SEC_USER_AGENT — see below (or: just signals init)
 ```
 
 The Python side is a single **uv workspace**: `uv sync` builds one environment for the
 library, the server and the CLI together, and the root `uv.lock` is the only lockfile. The
-`scripts/` entry points call `uv run`, so they keep that environment current on their own.
+`just` recipes call `uv run`, so they keep that environment current on their own.
 
 **Set `SEC_USER_AGENT` in `.env` to your own `Name email`.** SEC EDGAR asks automated
 callers to identify themselves with a contact address, and refuses requests that do not
@@ -85,7 +93,7 @@ With a ticker, the observable facts are fetched and only the assumptions stay on
 command line:
 
 ```sh
-./scripts/rdcf.sh --ticker MSFT --optimized-margin 30% --growth 1-5:12%
+just rdcf --ticker MSFT --optimized-margin 30% --growth 1-5:12%
 ```
 
 ```
@@ -103,11 +111,11 @@ YEAR    GROWTH  SOURCE         REVENUE   MARGIN            FCF             PV
 Everything works with no ticker and no network at all — type the five numbers in yourself:
 
 ```sh
-./scripts/rdcf.sh --price 224.03 --shares 24.40 --fcf 127.01 --fcf-margin 42% \
+just rdcf --price 224.03 --shares 24.40 --fcf 127.01 --fcf-margin 42% \
     --optimized-margin 35% --growth 1-3:55% --discount 10% --terminal 3%
 ```
 
-`./scripts/rdcf.sh --help` prints every flag with what it means. The ones you will actually
+`just rdcf --help` prints every flag with what it means. The ones you will actually
 reach for:
 
 | Flag | Default | What it is |
@@ -128,11 +136,12 @@ changes the window); reported history is cached for a week.
 ## Use it in the browser
 
 ```sh
-./scripts/run/server.sh   # API on 6100
-./scripts/run/web.sh      # UI on http://localhost:3000, proxying /api to the server
+just server   # API on 6240 (needs `just db up`)
+just web      # UI on http://localhost:3240, proxying /api to the server
 ```
 
-A left rail of tools and one open tool — no title bar, no chrome. Assumptions live in the
+A narrow rail of tool icons (the name shows on hover) and one open tool — no title bar, no
+chrome. The page opens on the signals; the reverse DCF is the second icon. Assumptions live in the
 left panel; growth is either a single rate for the whole horizon or a split (near-term
 years you pin, the rest solved). Every change re-solves, debounced, and the answer stays in
 one place: input and solved sit in one card, separated by an arrow, with the solved figure
@@ -145,19 +154,20 @@ scroll, and at 21:9 (>= 2200px) it moves beside the chart instead of under it.
 
 ## Use it over HTTP
 
-`./scripts/run/server.sh` — Swagger UI at <http://localhost:6100/docs>.
+`just server` — Swagger UI at <http://localhost:6240/docs>.
 
 | Endpoint | What it gives you |
 | --- | --- |
 | `GET /market/{ticker}` | The observable facts for a symbol, plus reported history. `?refresh=true` skips the cache. |
 | `POST /valuation/reverse-dcf` | The valuation itself. No network, no assumptions of its own. |
+| `GET /signals`, `/signals/feed`, `/signals/{id}` | The AI cycle signals: the board, the verdicts newest first, one check's history. |
 | `GET /health` | Liveness, for the container and the cluster. |
 | `POST /mcp` | The same tools over MCP — see [Use it from Claude Code](#use-it-from-claude-code). |
 
 ```sh
-curl -s localhost:6100/market/NVDA | jq '{price, shares_outstanding, revenue_ttm, fcf_ttm}'
+curl -s localhost:6240/market/NVDA | jq '{price, shares_outstanding, revenue_ttm, fcf_ttm}'
 
-curl -s localhost:6100/valuation/reverse-dcf -H 'content-type: application/json' -d '{
+curl -s localhost:6240/valuation/reverse-dcf -H 'content-type: application/json' -d '{
   "revenue": 302.40, "optimized_fcf_margin": 0.35,
   "shares_outstanding": 24.40, "current_price": 224.03,
   "discount_rate": 0.10, "terminal_growth": 0.03, "projection_years": 10,
@@ -187,8 +197,8 @@ history before picking a margin, and that rates are decimals.
 claude mcp add --transport http --scope user suwalski-investing \
     http://suwalski-investing-tools.k8s.suwalski.internal/mcp
 
-# or a local server from ./scripts/run/server.sh
-claude mcp add --transport http --scope user suwalski-investing-local http://localhost:6100/mcp
+# or a local server from `just server`
+claude mcp add --transport http --scope user suwalski-investing-local http://localhost:6240/mcp
 ```
 
 ## The inputs
@@ -229,24 +239,61 @@ One thing the model cannot know: **the discount rate is yours to set per currenc
 a reasonable hurdle in USD; for a PLN-denominated business both it and the terminal growth
 carry higher local inflation.
 
+## AI cycle signals
+
+Once a month the job asks a dozen questions whose answers would show the AI boom turning —
+monetisation losing to investment, chips ageing faster than the books say, the dollar value of
+tokens shrinking while their volume grows, lab funding cracking before profitability — and
+sends each answer that changed to Discord: **red** to one channel, **green** to another (mute
+that one on Discord if you only want warnings; the web page keeps them). A reading that cannot
+be trusted yet is not a signal: it is NOT_READY (nothing new) or INVALID (with the reason, on an
+optional status channel).
+
+| | Check | Reads |
+| --- | --- | --- |
+| A1 | Clouds slow down while capex keeps growing | earnings 8-Ks (AWS, Azure, Google Cloud growth) and 10-Q capex, SEC EDGAR |
+| A2 | OpenAI / Anthropic revenue run-rate stalls | news headlines + the model, two outlets to confirm |
+| B1 | A giant shortens the useful life of servers | 10-K / 10-Q text |
+| B2 | Write-downs of older chips | EDGAR full-text search |
+| B3 | Neocloud backlog shrinks (CoreWeave, Nebius) | RPO and revenue in XBRL |
+| B4 | Rental prices of recent GPU generations fall | vast.ai offers |
+| C1 | Jevons: token spend shrinks while volume grows | OpenRouter prices and daily volumes |
+| C2 | Tokens processed by Google / Microsoft (context) | earnings 8-Ks |
+| D1–D3 | Down-rounds, cancelled IPOs, cut compute contracts | news + 8-K item 1.02 + SEC form RW |
+| E1 | Market pays more for the same return on AI capital | RPO / capex vs EV / invested capital |
+
+The language model never knows anything on its own: it reads the documents the job fetched
+and every claim must quote words that are really in them. Any OpenAI-compatible endpoint works.
+
+```sh
+just signals init                 # webhooks, SEC identification, the model — written to .env
+just signals run --dry-run        # every verdict in the terminal; nothing stored or sent
+just signals check A1             # one check with its sources
+just signals run                  # the real thing (the cluster runs this monthly as a CronJob)
+```
+
+The whole plan, signal by signal, is linked from [`docs/notifier.md`](docs/notifier.md).
+
 ## Run it in containers
 
 The two deployables as the cluster runs them — the server as a wheel on a slim Python base,
 the web build as static files behind nginx:
 
 ```sh
-./scripts/infra/up.sh         # http://localhost:8080
-./scripts/infra/list.sh       # what is up, on which ports
-./scripts/infra/down.sh       # stop it
+just up                                   # http://localhost:8094 (with its own PostgreSQL)
+just status                               # what is up, on which ports
+podman compose run --rm signals           # the signals job against this stack (a dry run)
+podman compose run --rm signals run       # … for real
+just down                                 # stop it
 ```
 
-`up.sh --rebuild` ignores the layer cache and builds both images from zero — for when you
+`just rebuild` ignores the layer cache and builds both images from zero — for when you
 suspect a stale layer rather than a stale source file.
 
 Only `web` publishes a port: the browser talks to one origin and nginx proxies `/api` on to
 the server, stripping the prefix. Machine-local settings come from the root `.env`; in the
-cluster they arrive as a Secret instead. Neither image runs as root, and neither holds
-state — the snapshot cache is scratch, so the server scales out with no volume attached.
+cluster they arrive as Secrets instead. Neither image runs as root; state lives in PostgreSQL
+(the shared instance in the cluster), and the snapshot cache is scratch.
 
 ## Deployed by GitOps
 
@@ -276,28 +323,31 @@ The CLI says what happened on stderr and exits with a code you can branch on:
 | --- | --- |
 | History charts show four years for a US company | `SEC_USER_AGENT` is unset or not exported into the environment — EDGAR turned the anonymous request away and Yahoo answered instead |
 | An ADR resolves to no history at all | EDGAR lists no ticker for some ADRs; map it explicitly with `SEC_CIK_OVERRIDES=SE:1703399` |
-| The UI loads but every request fails | The server is not up, or is on another port — `./scripts/run/server.sh`, and check `CORS_ORIGINS` |
+| The UI loads but every request fails | The server is not up, or is on another port — `just server` (after `just db up`) |
 | A stale figure after a price move | `--refresh` on the CLI, `?refresh=true` on the API — snapshots live 15 minutes |
 
 ## Layout
 
 | Path | What it is |
 | --- | --- |
-| `suwalski_investing_library/` | The valuation engine, the pydantic contracts, and `marketdata/`. The engine half is stdlib + pydantic only — importing it pulls in no scraper, and a test enforces that. |
-| `suwalski_investing_server/` | FastAPI over the engine, plus the MCP server at `/mcp`. Port 6100. |
-| `suwalski_investing_cli/` | `rdcf` — the same engine in the terminal. |
-| `suwalski_investing_web/` | React 19 + Vite + Tailwind 4, Catppuccin Mocha. A static build; no Node server to deploy. Port 3000 in dev. |
-| `scripts/` | Entry points: `run/`, `infra/`, plus the CLI, lint+test and cleanup. |
-| `deploy/chart/` | The Helm chart. |
-| `docs/` | [`reverse-dcf.md`](docs/reverse-dcf.md) (the model and its math), [`guidelines.md`](docs/guidelines.md) (repo rules), `guide/` (how the deployment was built, and why — in Polish). |
+| `suwinvtools_library/` | The valuation engine, the pydantic contracts, and `marketdata/` (Yahoo, SEC EDGAR). The engine half is stdlib + pydantic only — importing it pulls in no scraper, and a test enforces that. |
+| `suwinvtools_server/` | FastAPI over the engine, the MCP server at `/mcp`, and the signals (`signals/`). Port 6240. |
+| `suwinvtools_cli/` | `rdcf` — the same engine in the terminal. |
+| `suwinvtools_web/` | React 19 + Mantine + Vite, one folder per tool. A static build; no Node server to deploy. Port 3240 in dev. |
+| `justfile`, `.just/`, `scripts/.internal/` | Commands for humans (`just`), and what they, CI and agents run. |
+| `deploy/chart/` | The Helm chart: server, web, ingress, the signals CronJob, the smoke test. |
+| `docs/` | [`reverse-dcf.md`](docs/reverse-dcf.md) (the model and its math), [`notifier.md`](docs/notifier.md) (the signals plan), `guide/` (how the deployment was built, and why — in Polish). Repo rules: [`AGENTS.md`](AGENTS.md). |
 | `.artifacts/` | Local scratch: cached snapshots and history. Gitignored. |
 
 ## Working on it
 
-One gate before any commit — ruff, every test suite, the web typecheck and the chart:
+One gate before any commit — ruff, pyright strict, import contracts, every test suite (on a
+real PostgreSQL), the web's types, lint, format, tests and dead code, the API types, the chart,
+the shell scripts, gitleaks and compose:
 
 ```sh
-./scripts/test-solution.sh
+just check
+just e2e      # the browser tests, against a real server and database
 ```
 
 CI runs that same script, deliberately: CI that runs something else is CI that can disagree
@@ -306,8 +356,8 @@ with your machine, and then neither of you is trustworthy.
 Clean up after yourself:
 
 ```sh
-./scripts/cleanup.sh                  # caches and generated files inside the repo
-./scripts/cleanup.sh --all --dry-run  # everything, including traces outside it — shows, deletes nothing
+just clean                  # caches and generated files inside the repo
+just clean --all --dry-run  # everything, including traces outside it — shows, deletes nothing
 ```
 
 `--venvs` drops `.venv` and `node_modules` (`uv sync` and `pnpm install` rebuild them);
@@ -317,15 +367,15 @@ shared uv cache. Nothing under `/var` is touched, because nothing of ours goes t
 
 In VS Code, open the repo folder — the single workspace `.venv` is what every debug
 configuration points at, so breakpoints resolve without interpreter switching. `Run server`,
-`rdcf: ask for arguments` and `pytest: all projects` are in the Run panel, and
-`test-solution` is the default test task (Ctrl+Shift+P → Run Test Task).
+`rdcf: ask for arguments` and `signals: dry run` are in the Run panel, and `just check` is the
+default test task (Ctrl+Shift+P → Run Test Task).
 
 ## Roadmap
 
 - **More providers.** `yfinance` is an unofficial scraper; a keyed provider (FMP, Tiingo)
   slots in behind the same `TickerSnapshot` contract when it starts breaking.
-- **More tools.** The web shell takes a new tool as one entry in `src/tools.ts` plus its
-  component; the reverse DCF is simply the first one.
+- **More tools.** A new tool is a feature folder on the server and on the web plus one icon in
+  the rail (AGENTS.md, "Adding a tool").
 
 ## License
 
