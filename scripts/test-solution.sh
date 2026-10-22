@@ -4,7 +4,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-PYTHON_PROJECTS=(suwalski_investing_library suwalski_investing_server suwalski_investing_cli)
+PYTHON_PROJECTS=(suwinvtools_library suwinvtools_server suwinvtools_cli)
 
 declare -a REPORT
 FAILED=0
@@ -31,7 +31,7 @@ format_check() {
 }
 
 web_typecheck() {
-    cd "$ROOT/suwalski_investing_web"
+    cd "$ROOT/suwinvtools_web"
     [ -d node_modules ] || pnpm install --silent
     pnpm exec tsc --noEmit
 }
@@ -60,7 +60,7 @@ run_step "format (ruff format --check)" format_check
 for project in "${PYTHON_PROJECTS[@]}"; do
     run_step "pytest $project" pytest_project "$project"
 done
-run_step "typecheck suwalski_investing_web (tsc)" web_typecheck
+run_step "typecheck suwinvtools_web (tsc)" web_typecheck
 
 # helm bywa nieobecny na świeżej maszynie. Pomijamy z wyraźną adnotacją zamiast raportować
 # PASS — cicho pominięty krok jest gorszy niż brak kroku.

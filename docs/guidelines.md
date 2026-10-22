@@ -5,11 +5,11 @@ AI-assisted coding live in `CLAUDE.md`; this document is about the repository it
 
 ## 1. Architecture invariants
 
-- **The library owns the math and the contracts.** `suwalski_investing_library` depends on
+- **The library owns the math and the contracts.** `suwinvtools_library` depends on
   pydantic and the stdlib — nothing else. No FastAPI, no HTTP client, no file I/O, no
   network. Every valuation rule lives here, which is why the tests can cover it in
   milliseconds and why the CLI and the server can never disagree about a number.
-- **Network and disk live in `suwalski_investing_library/marketdata/`, and nowhere else.**
+- **Network and disk live in `suwinvtools_library/marketdata/`, and nowhere else.**
   It is the only package that talks to a provider or writes a cache file, and its
   dependencies sit behind the `tickers` extra rather than in the library's base
   requirements. `valuation/` and `contracts/` must never import from it — `tests/
@@ -36,8 +36,8 @@ AI-assisted coding live in `CLAUDE.md`; this document is about the repository it
   page starts computing a figure, that figure belongs in the engine, where it can be tested.
 - **Server and CLI are adapters.** They parse input, call one library function, format the
   result. Business rules never leak into a router or an argparse handler. If you find
-  yourself computing something in `suwalski_investing_server`, it belongs in the library.
-- **Contracts are defined once**, in `suwalski_investing_library/contracts/`. The API
+  yourself computing something in `suwinvtools_server`, it belongs in the library.
+- **Contracts are defined once**, in `suwinvtools_library/contracts/`. The API
   request/response models and the CLI's internal types are the same pydantic models — the
   OpenAPI schema a future dashboard consumes is generated from them, so a field rename is a
   single edit.
@@ -94,13 +94,13 @@ and the table all repeat it.
 The reverse DCF is the first of several. A second one (comparables, owner earnings,
 whatever) follows the same shape:
 
-1. Contracts in `suwalski_investing_library/contracts/<tool>.py`.
-2. Pure engine in `suwalski_investing_library/<tool>/`, with its own unit tests.
-3. A router in `suwalski_investing_server/<tool>/router.py`, registered in `app.py`, and —
-   if an assistant should reach it — a tool in `suwalski_investing_server/mcp/server.py`.
+1. Contracts in `suwinvtools_library/contracts/<tool>.py`.
+2. Pure engine in `suwinvtools_library/<tool>/`, with its own unit tests.
+3. A router in `suwinvtools_server/<tool>/router.py`, registered in `app.py`, and —
+   if an assistant should reach it — a tool in `suwinvtools_server/mcp/server.py`.
 4. CLI surface only if the tool is genuinely faster to drive from a terminal — an unused
    command is a maintenance cost.
-5. A UI entry is one object in `suwalski_investing_web/src/tools.ts` plus its component;
+5. A UI entry is one object in `suwinvtools_web/src/tools.ts` plus its component;
    the shell needs no changes.
 6. `PYTHON_PROJECTS` in `scripts/test-solution.sh` updated if a new project appeared.
 

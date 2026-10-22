@@ -1,0 +1,21 @@
+[project]
+name = "suwinvtools-cli"
+version = "0.1.0"
+description = "Terminal front-end for the suwalski valuation engine"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "suwinvtools-library[tickers]",  # engine, contracts and ticker snapshots (path via uv.sources)
+]
+
+[project.scripts]
+rdcf = "suwinvtools_cli.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+suwinvtools-library = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["suwinvtools_cli"]

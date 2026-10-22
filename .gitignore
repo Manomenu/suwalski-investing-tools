@@ -1,30 +1,39 @@
+# Secrets and machine-local settings. Committed defaults live in .env.base, documented
+# overrides in .env.example; the real values never enter git (AGENTS.md, "Secrets").
 **/.env
+**/.env.local
+.secrets/
+*.pem
+*.key
+*.p12
+id_rsa*
+id_ed25519*
+
+# Python
 **/.venv/
 **/__pycache__/
-**/*.pyc
-**/*.pyo
-**/*.pyd
-**/dist/
-**/build/
+**/*.py[cod]
 **/*.egg-info/
-**/.mypy_cache/
-**/.ruff_cache/
 **/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/.import_linter_cache/
 **/.coverage
 **/htmlcov/
-**/logs/
+
+# Web
+**/node_modules/
+**/dist/
+**/build/
+**/*.tsbuildinfo
+
+# Everything generated (e2e reports, renders, graphs) goes to .artifacts/, never next to code.
 .artifacts/*
 !.artifacts/.gitkeep
+**/logs/
 
-**/node_modules/
-**/*.tsbuildinfo
-**/.next/
-**/.env.local
-
+# Agents' scratch space — and the one-off scripts they leave where a package's tools can see them
 .claude/worktrees/
 scratchpad/
-
-# terraform state and local plugin cache (infrastructure/, once it exists)
-**/.terraform/
-*.tfstate
-*.tfstate.*
+*.tmp.mjs
+.suwgit.log

@@ -39,13 +39,13 @@ jobs:
       # package.json at the repo root for the action to find on its own.
       - uses: pnpm/action-setup@v4
         with:
-          package_json_file: suwalski_investing_web/package.json
+          package_json_file: suwinvtools_web/package.json
 
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: pnpm
-          cache-dependency-path: suwalski_investing_web/pnpm-lock.yaml
+          cache-dependency-path: suwinvtools_web/pnpm-lock.yaml
 
       # The script skips the chart check when helm is absent, so CI has to provide it —
       # otherwise the one place that should always run it would quietly not.
@@ -68,9 +68,9 @@ jobs:
       matrix:
         include:
           - image: server
-            dockerfile: suwalski_investing_server/Dockerfile
+            dockerfile: suwinvtools_server/Dockerfile
           - image: web
-            dockerfile: suwalski_investing_web/Dockerfile
+            dockerfile: suwinvtools_web/Dockerfile
     steps:
       - uses: actions/checkout@v4
 
