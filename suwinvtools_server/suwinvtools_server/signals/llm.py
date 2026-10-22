@@ -41,7 +41,11 @@ SYSTEM = """You extract facts from the documents you are given. Rules:
 - Use ONLY the documents. If they do not state something, say so (found=false, or an empty list).
 - Every quote is copied VERBATIM from the document whose id you give — same words, same numbers.
 - Never compute, estimate or round a number the documents do not state.
-- Answer with JSON that matches the schema, nothing else."""
+- Answer with compact JSON on one line that matches the schema, nothing else."""
+
+
+MAX_TOKENS = 800
+TIMEOUT_SECONDS = 60
 
 
 def prompt(instruction: str, documents: Sequence[Document]) -> str:
@@ -74,7 +78,12 @@ def litellm_extractor(settings: Settings) -> Extractor:
                     messages=messages,
                     response_format=schema,
                     temperature=0,
-                    timeout=120,
+                    # Grammar-constrained decoding can loop (endless digits of a float, endless
+                    # spaces); without a cap one answer runs until the context is full. Every
+                    # schema here fits in a few hundred tokens.
+                    max_tokens=MAX_TOKENS,
+                    timeout=TIMEOUT_SECONDS,
+                    num_retries=0,
                     extra_body=extra or None,
                 )
             except Exception as exc:  # litellm raises its own zoo of errors; all of them mean "no answer"
@@ -90,19 +99,57 @@ def litellm_extractor(settings: Settings) -> Extractor:
 
 
 def _json_part(content: str) -> str:
-    """The JSON object in an answer — some servers wrap it in a ``` fence despite the schema."""
-    start, end = content.find("{"), content.rfind("}")
-    return content[start : end + 1] if start != -1 and end > start else content
+    """The JSON object in an answer — some servers wrap it in a ``` fence despite the schema —
+    repaired when the model looped on whitespace and the token cap cut it off."""
+    start = content.find("{")
+    if start == -1:
+        return content
+    return close_truncated(content[start:].rstrip())
+
+
+def close_truncated(text: str) -> str:
+    """`text` cut back to its last complete value and closed with the brackets still open.
+
+    Grammar-constrained decoding sometimes ends a list with thousands of newlines until the cap
+    cuts the answer mid-item. What came before that is valid; dropping the unfinished item and
+    closing the brackets keeps it. Every claim still has to pass `verify`, so a repair can only
+    lose a claim, never invent one. Complete JSON comes back unchanged."""
+    stack: list[str] = []
+    in_string = escaped = False
+    cut, cut_stack = -1, list[str]()
+    for index, char in enumerate(text):
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char in "{[":
+            stack.append("}" if char == "{" else "]")
+        elif char in "}]" and stack:
+            stack.pop()
+            if not stack:
+                return text[: index + 1]
+            cut, cut_stack = index + 1, list(stack)
+    if cut == -1:
+        return text
+    return text[:cut] + "".join(reversed(cut_stack))
 
 
 # --- verification -----------------------------------------------------------------------------
 
 
 def normalize(text: str) -> str:
-    text = unicodedata.normalize("NFKC", text)
-    quotes = {"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"', "\u2013": "-", "\u2014": "-", "\u00a0": " "}
-    text = text.translate(str.maketrans(quotes))
-    return re.sub(r"\s+", " ", text).strip().lower()
+    """Words and numbers only, lower case: a quote from a table ("servers and network equipment,
+    two to six years") must match the cells it came from, whatever separates them."""
+    text = unicodedata.normalize("NFKC", text).lower()
+    text = re.sub(r"[^\w%$.]+", " ", text)
+    text = re.sub(r"(?<!\d)\.|\.(?!\d)", " ", text)  # a full stop is punctuation; 4.5 stays a number
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def verify(quote: Quote | None, documents: Sequence[Document]) -> Evidence | None:
@@ -131,11 +178,20 @@ _SCALES = {
 }
 
 
+_NUMBER_WORDS = (
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen "
+    "twenty"
+)
+_WORDS = {word: index for index, word in enumerate(_NUMBER_WORDS.split(" "))}
+
+
 def states_number(text: str, value: float, *, tolerance: float = 0.01) -> bool:
     """Whether `text` contains `value`, written plainly or with a unit word ("$5.2 billion",
-    "39%", "five-year" does not count). Used so a correct quote cannot carry a wrong number."""
+    "39%", "six years"). Used so a correct quote cannot carry a wrong number."""
     if value == 0:
         return True
+    # "six years", "five-year": the filings spell small numbers out.
+    text = re.sub(r"\b(" + "|".join(_WORDS) + r")\b", lambda match: str(_WORDS[match.group(1).lower()]), text, flags=re.IGNORECASE)
     for match in _NUMBER.finditer(text):
         number = float(match.group(1).replace(",", ""))
         unit = (match.group(2) or "").lower()

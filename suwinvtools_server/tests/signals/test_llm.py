@@ -1,7 +1,7 @@
 import pytest
 
 from suwinvtools_server.settings import Settings
-from suwinvtools_server.signals.llm import Document, LlmError, litellm_extractor, normalize, states_number, verify
+from suwinvtools_server.signals.llm import Document, LlmError, close_truncated, litellm_extractor, normalize, states_number, verify
 from suwinvtools_server.signals.model import Quote
 
 DOCUMENT = Document(
@@ -12,10 +12,10 @@ DOCUMENT = Document(
 )
 
 
-def test_normalize_unifies_quotes_dashes_spaces_and_case() -> None:
+def test_normalize_keeps_words_and_numbers_only() -> None:
     messy = "  It\N{RIGHT SINGLE QUOTATION MARK}s  \N{LEFT DOUBLE QUOTATION MARK}A\N{RIGHT DOUBLE QUOTATION MARK}"
     messy += "\N{EM DASH}B\N{NO-BREAK SPACE}C\n D "
-    assert normalize(messy) == 'it\'s "a"-b c d'
+    assert normalize(messy) == "it s a b c d"
 
 
 def test_verify_accepts_words_that_are_in_the_document_it_cites() -> None:
@@ -51,7 +51,7 @@ def test_verify_rejects_invented_misattributed_and_tiny_quotes(quote: Quote | No
         ("raised $300 million", 3e8, True),
         ("processes 1.3 quadrillion tokens", 1.3e15, True),
         ("worth $1,250,000 in total", 1.25e6, True),
-        ("a five-year plan", 5, False),  # spelled out numbers do not count
+        ("a five-year plan", 5, True),  # filings spell small numbers out
         ("a 5-year plan", 5, True),
         ("raised $40 billion at a $300 billion valuation", 300e9, True),
         ("raised $40 billion", 300e9, False),
@@ -66,3 +66,17 @@ def test_states_number(text: str, value: float, expected: bool) -> None:
 def test_the_extractor_needs_a_configured_model() -> None:
     with pytest.raises(LlmError, match="LLM_BASE_URL"):
         litellm_extractor(Settings(llm_base_url="", llm_model=""))
+
+
+def test_a_truncated_list_keeps_its_complete_items() -> None:
+    looped = '{"events":[{"x":"a}b"},{"x":"c"}, {"x":"unfin'
+
+    assert close_truncated(looped) == '{"events":[{"x":"a}b"},{"x":"c"}]}'
+
+
+def test_a_list_ended_by_whitespace_until_the_cap_is_closed() -> None:
+    assert close_truncated('{"claims":[{"q":{"t":"x"}}' + "\n" * 50) == '{"claims":[{"q":{"t":"x"}}]}'
+
+
+def test_complete_json_is_left_as_it_is() -> None:
+    assert close_truncated('{"a": 1} trailing words') == '{"a": 1}'
