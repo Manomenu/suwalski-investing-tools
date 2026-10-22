@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from pydantic import BaseModel
 
+from suwinvtools_server.signals.checks.base import is_news
 from suwinvtools_server.signals.checks.funding import ComputeCuts, LabFunding, LabIpo
 from suwinvtools_server.signals.llm import Document
 from suwinvtools_server.signals.model import (
@@ -234,3 +235,10 @@ def test_compute_cuts_evaluation() -> None:
     assert verdict(cut("expand", usd=2e9)) is Verdict.GREEN
     assert verdict(cut("expand", mw=600)) is Verdict.GREEN
     assert verdict(cut("expand", usd=5e8, mw=100)) is Verdict.NEUTRAL
+
+
+def test_only_events_of_the_last_two_months_are_news() -> None:
+    assert is_news("2026-10", TODAY)
+    assert is_news("2026-08", TODAY)
+    assert not is_news("2025-06", TODAY)  # an old event an article mentions again
+    assert not is_news("2026-11", TODAY)  # a misread date

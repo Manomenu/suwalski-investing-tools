@@ -7,6 +7,7 @@ language model returns must come from these words. The feed's terms allow person
 non-commercial use, which is what a homelab notifier is.
 """
 
+import dataclasses
 import re
 import urllib.parse
 from dataclasses import dataclass
@@ -45,7 +46,13 @@ def search_url(query: str, *, days: int = 35) -> str:
     return SEARCH_URL.format(query=urllib.parse.quote(f"{query} when:{days}d"))
 
 
-def headlines(feed: bytes, *, prefix: str = "n") -> list[Headline]:
+# A search answers up to a hundred headlines; the newest thirty say what is new, and a prompt
+# three times as long costs the local model half a minute a question.
+MAX_HEADLINES = 30
+
+
+def headlines(feed: bytes, *, prefix: str = "n", limit: int = MAX_HEADLINES) -> list[Headline]:
+    """The newest `limit` headlines of a feed, newest first, numbered n1, n2, … in that order."""
     try:
         root = ElementTree.fromstring(feed)  # noqa: S314 — Google's feed, parsed without entity expansion by default
     except ElementTree.ParseError as exc:
@@ -54,7 +61,7 @@ def headlines(feed: bytes, *, prefix: str = "n") -> list[Headline]:
     if channel is None:
         raise SourceChangedError("Google News RSS without a channel")
     found: list[Headline] = []
-    for index, item in enumerate(channel.findall("item"), start=1):
+    for item in channel.findall("item"):
         source = item.find("source")
         raw_date = item.findtext("pubDate") or ""
         try:
@@ -68,7 +75,7 @@ def headlines(feed: bytes, *, prefix: str = "n") -> list[Headline]:
             title = title[: -len(outlet) - 3]
         found.append(
             Headline(
-                id=f"{prefix}{index}",
+                id="",
                 title=title,
                 outlet=outlet,
                 outlet_url=source.get("url", "") if source is not None else "",
@@ -77,7 +84,8 @@ def headlines(feed: bytes, *, prefix: str = "n") -> list[Headline]:
                 description=_description(item.findtext("description") or "", title, outlet),
             )
         )
-    return found
+    found.sort(key=lambda headline: headline.published, reverse=True)
+    return [dataclasses.replace(headline, id=f"{prefix}{index}") for index, headline in enumerate(found[:limit], start=1)]
 
 
 def _description(raw: str, title: str, outlet: str) -> str:

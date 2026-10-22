@@ -119,6 +119,16 @@ def quarter_end(period: str) -> date:
     return {1: date(year, 3, 31), 2: date(year, 6, 30), 3: date(year, 9, 30), 4: date(year, 12, 31)}[q]
 
 
+# News keep mentioning old events ("after it walked away from a lease last year…"). An event is
+# news when it happened at most this many months before the run.
+NEWS_MONTHS = 2
+
+
+def is_news(event_month: str, today: date) -> bool:
+    """Recent, and not in the future — a month after today is the model misreading a date."""
+    return shift_month(month(today), -NEWS_MONTHS) <= event_month[:7] <= month(today)
+
+
 def by_subject(history: Iterable[Reading]) -> dict[str, dict[str, Reading]]:
     """Readings as subject -> period -> reading."""
     grouped: dict[str, dict[str, Reading]] = {}

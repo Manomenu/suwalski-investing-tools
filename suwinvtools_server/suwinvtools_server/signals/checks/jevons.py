@@ -81,7 +81,14 @@ class TokenSpend(Check):
                 )
         closed = sorted(quarters)
         if not closed:
-            return []
+            if not months:
+                return []
+            newest = months[max(months)]
+            return [
+                self.outcome(
+                    newest, Verdict.BASELINE, f"OpenRouter: {usd(newest.value or 0)} dziennie — zbieram miesiące do pierwszego kwartału."
+                )
+            ]
         last = closed[-1]
         reading = Reading(
             check_id=self.meta.id, subject=OPENROUTER, period=last, value=quarters[last][0], evidence=quarters[last][2].evidence

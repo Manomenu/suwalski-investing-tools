@@ -14,6 +14,7 @@ from suwinvtools_server.signals.checks.base import (
     ask_news,
     by_subject,
     confirmed,
+    is_news,
     month,
     pct,
     usd,
@@ -88,6 +89,8 @@ class LabFunding(Check):
             for event in answer.events if answer else []:
                 checked = verified(event.quote, documents, found)
                 if checked is None or event.company.lower() != lab.lower() or event.kind not in FUNDING_KINDS:
+                    continue
+                if not is_news(event.month, ctx.today):
                     continue
                 if event.post_money_usd and not states_number(event.quote.text, event.post_money_usd):
                     continue
@@ -190,6 +193,8 @@ class LabIpo(Check):
                 for event in answer.events if answer else []:
                     checked = verified(event.quote, documents, found)
                     if checked is None or event.company.lower() != lab.lower() or event.kind not in IPO_KINDS:
+                        continue
+                    if not is_news(event.month, ctx.today):
                         continue
                     evidence, domain = checked
                     readings[f"{event.month[:7]} {event.kind}"] = Reading(
@@ -306,7 +311,7 @@ class ComputeCuts(Check):
                 continue
             for event in answer.events if answer else []:
                 checked = verified(event.quote, documents, found)
-                if checked is not None and _subject_of(event.who, event.counterparty) == subject:
+                if checked is not None and _subject_of(event.who, event.counterparty) == subject and is_news(event.month, ctx.today):
                     self._keep(readings, subject, event, checked)
         for ticker in FILERS:
             try:
@@ -318,7 +323,7 @@ class ComputeCuts(Check):
                     answer = ctx.extract(CapacityEvents, task, [document])
                     for event in answer.events if isinstance(answer, CapacityEvents) else []:
                         evidence = verify(event.quote, [document])
-                        if evidence is not None:
+                        if evidence is not None and is_news(event.month, ctx.today):
                             self._keep(readings, ticker, event, (evidence, ""), primary=True)
             except READ_ERRORS as exc:
                 result.skipped.append(self.skip(ticker, period, Verdict.INVALID, f"8-K: {exc}"))
