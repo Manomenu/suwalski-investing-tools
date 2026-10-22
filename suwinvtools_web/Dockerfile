@@ -23,14 +23,16 @@ RUN pnpm build
 FROM docker.io/nginxinc/nginx-unprivileged:1.29-alpine
 
 # At container start the image's entrypoint runs envsubst over /etc/nginx/templates/ and
-# writes the result to /etc/nginx/conf.d/ — which is how ${API_UPSTREAM} below becomes a
-# real address without rebuilding. The filter narrows that to a whitelist of one: nothing
-# else the environment happens to carry can rewrite this config. Without it envsubst
-# expands every name present in the environment, and nginx's own $host and $scheme
-# survive only as long as nothing is named after them.
-ENV NGINX_ENVSUBST_FILTER="^API_UPSTREAM$"
+# writes the result to /etc/nginx/conf.d/ — which is how ${API_UPSTREAM} becomes a real
+# address without rebuilding. The filter narrows that to a whitelist of two: without it
+# envsubst expands every name present in the environment, and nginx's own $host and
+# $scheme survive only as long as nothing is named after them.
+ENV NGINX_ENVSUBST_FILTER="^(API_UPSTREAM|NGINX_LOCAL_RESOLVERS)$"
+# Makes the entrypoint export NGINX_LOCAL_RESOLVERS: the nameservers from /etc/resolv.conf,
+# which nginx needs to look the API's name up again after the server is recreated.
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 # Matches the service name in compose; the cluster overrides it with the Service address.
-ENV API_UPSTREAM="http://server:6100"
+ENV API_UPSTREAM="http://server:6240"
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY suwinvtools_web/nginx.conf.template /etc/nginx/templates/default.conf.template

@@ -21,7 +21,9 @@ def layered_modules() -> set[str]:
 
 
 def test_every_server_module_has_a_layer() -> None:
-    modules = {f"suwinvtools_server.{module.name}" for module in pkgutil.iter_modules(suwinvtools_server.__path__)} - {"suwinvtools_server.__main__"}
+    modules = {f"suwinvtools_server.{module.name}" for module in pkgutil.iter_modules(suwinvtools_server.__path__)} - {
+        "suwinvtools_server.__main__"
+    }
 
     missing = modules - layered_modules()
 

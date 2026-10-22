@@ -19,10 +19,21 @@
                 "suwinvtools_server.app:app",
                 "--reload",
                 "--port",
-                "6100"
+                "6240"
             ],
             "cwd": "${workspaceFolder}/suwinvtools_server",
             "python": "${workspaceFolder}/.venv/bin/python",
+            "justMyCode": true
+        },
+        {
+            "name": "signals: dry run",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "suwinvtools_server.signals.job",
+            "args": ["run", "--dry-run"],
+            "cwd": "${workspaceFolder}/suwinvtools_server",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "console": "integratedTerminal",
             "justMyCode": true
         },
         {

@@ -1,20 +1,6 @@
 {
-    "compilerOptions": {
-        "target": "ES2022",
-        "lib": ["ES2022", "DOM", "DOM.Iterable"],
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "jsx": "react-jsx",
-        "types": ["vite/client"],
-        "strict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noUncheckedIndexedAccess": true,
-        "noFallthroughCasesInSwitch": true,
-        "verbatimModuleSyntax": true,
-        "skipLibCheck": true,
-        "noEmit": true,
-        "isolatedModules": true
-    },
-    "include": ["src", "vite.config.ts"]
+    // Only points at the two projects, so the editor knows which settings a file gets:
+    // the browser app (tsconfig.app.json) or code that runs in Node (tsconfig.node.json).
+    "files": [],
+    "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }

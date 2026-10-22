@@ -50,6 +50,9 @@ DEBT_TAGS = ("LongTermDebt", "LongTermDebtNoncurrent", "DebtInstrumentCarryingAm
 CASH_TAGS = ("CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents")
 # In the dei namespace, not us-gaap: instants(facts, SHARES_TAGS, namespace="dei").
 SHARES_TAGS = ("EntityCommonStockSharesOutstanding",)
+# Companies with several share classes (Alphabet) report the count above per class, which the
+# companyfacts API leaves out; the quarter's diluted average is the fallback (quarter_averages).
+DILUTED_SHARES_TAGS = ("WeightedAverageNumberOfDilutedSharesOutstanding",)
 
 
 def sec_get(url: str) -> bytes:
@@ -261,6 +264,23 @@ def _freshest(series: list[dict[date, float]]) -> dict[date, float]:
     filled = [values for values in series if values]
     none: dict[date, float] = {}
     return max(filled, key=lambda values: (max(values), len(values)), default=none)
+
+
+def quarter_averages(facts: Json, tags: Iterable[str], *, unit: str = "shares") -> dict[date, float]:
+    """Values reported for exactly one quarter (an average, not a flow: never de-cumulated),
+    keyed by the quarter's end, the latest filing winning."""
+    series: list[dict[date, float]] = []
+    for tag in tags:
+        values: dict[date, tuple[str, float]] = {}
+        for entry in _usd_entries(facts, tag, unit=unit):
+            if "start" not in entry:
+                continue
+            start, end = date.fromisoformat(str(entry["start"])), date.fromisoformat(str(entry["end"]))
+            filed = str(entry.get("filed", ""))
+            if _months(start, end) == 3 and (end not in values or filed > values[end][0]):
+                values[end] = (filed, float(cast(float, entry["val"])))
+        series.append({end: value for end, (_, value) in values.items()})
+    return _freshest(series)
 
 
 def trailing_sum(quarters: Mapping[date, float], end: date, count: int = 4) -> float | None:

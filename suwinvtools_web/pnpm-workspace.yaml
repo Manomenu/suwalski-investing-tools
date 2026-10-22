@@ -3,5 +3,8 @@
 # non-interactive.
 allowBuilds:
   esbuild: true
+  # Comes with eslint-plugin-boundaries; its prebuilt binary arrives as an optional package,
+  # so its postinstall (a fallback build) is not needed.
+  unrs-resolver: false
 onlyBuiltDependencies:
   - esbuild

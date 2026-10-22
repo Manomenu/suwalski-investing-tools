@@ -7,13 +7,13 @@
 #   secrets.sh backup              .env and <project>/.env → Secure Notes in folder "Homelab"
 #   secrets.sh restore [--force]   those notes → the files (a differing file is kept unless --force)
 #
-# One note per file, named "myapp/<path>". Values travel through pipes and files only —
+# One note per file, named "suwinvtools/<path>". Values travel through pipes and files only —
 # never as arguments, never on screen.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 FOLDER_NAME="Homelab"
-PREFIX="myapp/"
+PREFIX="suwinvtools/"
 SERVER="https://vault.bitwarden.eu"
 
 for tool in bw jq; do

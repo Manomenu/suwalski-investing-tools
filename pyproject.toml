@@ -60,8 +60,8 @@ name = "Inside signals: HTTP and the job > checks > what they read and write > m
 type = "layers"
 containers = ["suwinvtools_server.signals"]
 layers = [
-    "api | job | setup",
-    "runner",
+    "api | job",
+    "setup | runner",
     "checks",
     "store | sources | llm | discord",
     "model",
