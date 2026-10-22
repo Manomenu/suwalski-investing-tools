@@ -12,8 +12,8 @@ notice to travel with those files, which is what these are:
 
 | Font | Notice | Upstream |
 | --- | --- | --- |
-| Inter | [`suwalski_investing_web/public/fonts/inter-OFL.txt`](suwalski_investing_web/public/fonts/inter-OFL.txt) | [rsms/inter](https://github.com/rsms/inter) |
-| JetBrains Mono | [`suwalski_investing_web/public/fonts/jetbrains-mono-OFL.txt`](suwalski_investing_web/public/fonts/jetbrains-mono-OFL.txt) | [JetBrains/JetBrainsMono](https://github.com/JetBrains/JetBrainsMono) |
+| Inter | [`suwinvtools_web/public/fonts/inter-OFL.txt`](suwinvtools_web/public/fonts/inter-OFL.txt) | [rsms/inter](https://github.com/rsms/inter) |
+| JetBrains Mono | [`suwinvtools_web/public/fonts/jetbrains-mono-OFL.txt`](suwinvtools_web/public/fonts/jetbrains-mono-OFL.txt) | [JetBrains/JetBrainsMono](https://github.com/JetBrains/JetBrainsMono) |
 
 They live under `public/`, so vite copies them to the root of every build and they are
 reachable at `/fonts/inter-OFL.txt` and `/fonts/jetbrains-mono-OFL.txt` on a running

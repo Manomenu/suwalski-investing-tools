@@ -1,0 +1,74 @@
+{{- /*
+Miesięczny job sygnałów końca hossy na AI. Ten sam obraz co serwer, inne polecenie — jak
+w compose (`podman compose run --rm signals run`). Czyta EDGAR, vast.ai, OpenRouter i Google
+News, pyta model o fakty z pobranych tekstów, zapisuje werdykty w bazie i wysyła to, co się
+zmieniło, na kanały Discorda. Sam pomija to, czego nie ma jeszcze do przeczytania, więc
+częstszy harmonogram kosztuje prawie nic.
+*/ -}}
+{{- if .Values.signals.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "app.name" . }}-signals
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: signals
+spec:
+  schedule: {{ .Values.signals.schedule | quote }}
+  timeZone: {{ .Values.signals.timeZone }}
+  # Dwa runy naraz wysłałyby te same werdykty dwa razy.
+  concurrencyPolicy: Forbid
+  # Węzeł, który był wyłączony o 9:00, nadrabia w ciągu doby zamiast czekać miesiąc.
+  startingDeadlineSeconds: 86400
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            {{- include "app.labels" . | nindent 12 }}
+            app.kubernetes.io/component: signals
+        spec:
+          restartPolicy: Never
+          {{- with .Values.image.pullSecret }}
+          imagePullSecrets:
+            - name: {{ . }}
+          {{- end }}
+          containers:
+            - name: signals
+              image: {{ include "app.image" (dict "Values" .Values "component" "server") }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["python", "-m", "suwinvtools_server.signals.job", "run"]
+              env:
+                - name: SEC_USER_AGENT
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secret.name }}
+                      key: {{ .Values.secret.key }}
+                      optional: true
+                # Linki w wiadomościach na Discordzie prowadzą do strony checka.
+                - name: WEB_BASE
+                  value: http://{{ .Values.ingress.host }}
+                # Stopka wiadomości mówi, z której wersji przyszła.
+                - name: IMAGE_TAG
+                  value: {{ .Values.image.tag | quote }}
+                - name: SUWINVTOOLS_MARKET_CACHE
+                  value: /tmp/market
+              envFrom:
+                {{- with .Values.server.databaseSecret }}
+                - secretRef:
+                    name: {{ . }}
+                {{- end }}
+                {{- with .Values.signals.secret }}
+                - secretRef:
+                    name: {{ . }}
+                {{- end }}
+              resources:
+                {{- toYaml .Values.signals.resources | nindent 16 }}
+              securityContext:
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+{{- end }}

@@ -5,8 +5,8 @@
             "name": "Run server",
             "type": "debugpy",
             "request": "launch",
-            "module": "suwalski_investing_server",
-            "cwd": "${workspaceFolder}/suwalski_investing_server",
+            "module": "suwinvtools_server",
+            "cwd": "${workspaceFolder}/suwinvtools_server",
             "python": "${workspaceFolder}/.venv/bin/python",
             "justMyCode": true
         },
@@ -16,20 +16,31 @@
             "request": "launch",
             "module": "uvicorn",
             "args": [
-                "suwalski_investing_server.app:app",
+                "suwinvtools_server.app:app",
                 "--reload",
                 "--port",
-                "6100"
+                "6240"
             ],
-            "cwd": "${workspaceFolder}/suwalski_investing_server",
+            "cwd": "${workspaceFolder}/suwinvtools_server",
             "python": "${workspaceFolder}/.venv/bin/python",
+            "justMyCode": true
+        },
+        {
+            "name": "signals: dry run",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "suwinvtools_server.signals.job",
+            "args": ["run", "--dry-run"],
+            "cwd": "${workspaceFolder}/suwinvtools_server",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "console": "integratedTerminal",
             "justMyCode": true
         },
         {
             "name": "rdcf: NVDA example",
             "type": "debugpy",
             "request": "launch",
-            "module": "suwalski_investing_cli",
+            "module": "suwinvtools_cli",
             "args": [
                 "--ticker",
                 "NVDA",
@@ -42,7 +53,7 @@
                 "--terminal",
                 "3%"
             ],
-            "cwd": "${workspaceFolder}/suwalski_investing_cli",
+            "cwd": "${workspaceFolder}/suwinvtools_cli",
             "python": "${workspaceFolder}/.venv/bin/python",
             "console": "integratedTerminal",
             "justMyCode": true
@@ -51,7 +62,7 @@
             "name": "rdcf: ask for arguments",
             "type": "debugpy",
             "request": "launch",
-            "module": "suwalski_investing_cli",
+            "module": "suwinvtools_cli",
             "args": [
                 "--ticker",
                 "${input:ticker}",
@@ -64,7 +75,7 @@
                 "--terminal",
                 "${input:terminal}"
             ],
-            "cwd": "${workspaceFolder}/suwalski_investing_cli",
+            "cwd": "${workspaceFolder}/suwinvtools_cli",
             "python": "${workspaceFolder}/.venv/bin/python",
             "console": "integratedTerminal",
             "justMyCode": true
@@ -75,9 +86,9 @@
             "request": "launch",
             "module": "pytest",
             "args": [
-                "suwalski_investing_library",
-                "suwalski_investing_server",
-                "suwalski_investing_cli",
+                "suwinvtools_library",
+                "suwinvtools_server",
+                "suwinvtools_cli",
                 "-v"
             ],
             "cwd": "${workspaceFolder}",
@@ -88,7 +99,7 @@
             "name": "web (vite dev)",
             "type": "node-terminal",
             "request": "launch",
-            "cwd": "${workspaceFolder}/suwalski_investing_web",
+            "cwd": "${workspaceFolder}/suwinvtools_web",
             "command": "pnpm dev"
         }
     ],

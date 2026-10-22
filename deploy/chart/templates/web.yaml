@@ -17,6 +17,10 @@ spec:
         {{- include "app.labels" . | nindent 8 }}
         app.kubernetes.io/component: web
     spec:
+      {{- with .Values.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ . }}
+      {{- end }}
       containers:
         - name: web
           image: {{ include "app.image" (dict "Values" .Values "component" "web") }}
@@ -25,10 +29,11 @@ spec:
             - containerPort: {{ .Values.web.port }}
           env:
             # Nazwa usługi, nie adres — dokładnie to, po co istnieje ${API_UPSTREAM}
-            # w nginx.conf.template. W compose było http://server:6100, tu jest to samo
-            # z przedrostkiem wydania.
+            # w nginx.conf.template. W compose wystarcza http://server:6290; tu pełna nazwa,
+            # bo nginx sam ją rozwiązuje co kilka sekund i nie zna domen wyszukiwania
+            # z /etc/resolv.conf, więc krótka nazwa usługi by nie zadziałała.
             - name: API_UPSTREAM
-              value: http://{{ include "app.name" . }}-server:{{ .Values.server.port }}
+              value: http://{{ include "app.name" . }}-server.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.server.port }}
           readinessProbe:
             httpGet:
               path: /healthz

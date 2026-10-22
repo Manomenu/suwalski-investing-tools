@@ -6,10 +6,15 @@ image:
   registry: ghcr.io/manomenu/suwalski-investing-tools
   tag: "" # np. sha-a1b2c3d — podawane przez Argo Application
   pullPolicy: IfNotPresent
+  # Secret typu docker-registry dla prywatnego rejestru; puste = obrazy publiczne.
+  pullSecret: ""
 
 server:
   replicas: 1
-  port: 6100
+  port: 6240
+  # Secret z DATABASE_URL w namespace wydania, zakładany przez repo platformy
+  # (database_access w setup.sh). Bez bazy serwer celowo nie wstaje.
+  databaseSecret: ""
   resources:
     requests: { cpu: 50m, memory: 192Mi }
     limits: { memory: 512Mi }
@@ -21,10 +26,15 @@ web:
     requests: { cpu: 10m, memory: 32Mi }
     limits: { memory: 128Mi }
 
+# Sprawdzenie po każdym wdrożeniu (templates/smoke-test.yaml): Job, który Argo uruchamia po synchronizacji.
+smokeTest:
+  enabled: true
+  image: docker.io/curlimages/curl:8.22.0
+
 ingress:
   enabled: true
   className: traefik
-  host: rdcf.k8s.suwalski.internal
+  host: suwinvtools.k8s.suwalski.internal
   # Serwer MCP dla asystenta (Claude Code): <mcpHost>/mcp prosto do serwera, z pominięciem
   # nginx. Osobny host, bo to osobny klient — nie przeglądarka. Tylko LAN, bez autoryzacji:
   # *.k8s.suwalski.internal nie wychodzi przez tunel. Puste = bez tej reguły.
@@ -44,3 +54,19 @@ cache:
 secret:
   name: suwalski-sec
   key: SEC_USER_AGENT
+
+# Miesięczny job sygnałów końca hossy na AI (templates/signals-cronjob.yaml): obraz serwera
+# z innym poleceniem. Stan trzyma w bazie, więc nie potrzebuje dysku.
+signals:
+  enabled: true
+  # 3. dnia miesiąca o 9:00 czasu warszawskiego. Raporty kwartalne wychodzą pod koniec stycznia,
+  # kwietnia, lipca i października; job sam pomija to, czego nie ma jeszcze do przeczytania.
+  schedule: "0 9 3 * *"
+  timeZone: Europe/Warsaw
+  # Secret z webhookami Discorda i modelem (DISCORD_WEBHOOK_GREEN/RED/STATUS, DISCORD_RED_MENTION,
+  # LLM_BASE_URL, LLM_MODEL, LLM_API_KEY). Adres modelu to prywatna infrastruktura właściciela,
+  # więc też w sekrecie, nie tutaj — repo jest publiczne. Zakłada go setup.sh w repo platformy.
+  secret: ""
+  resources:
+    requests: { cpu: 50m, memory: 256Mi }
+    limits: { memory: 768Mi }
