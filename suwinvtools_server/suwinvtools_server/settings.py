@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from suwinvtools_library.constants import SOLUTION_ROOT
 
 PROJECT_ROOT = Path(__file__).parent.parent

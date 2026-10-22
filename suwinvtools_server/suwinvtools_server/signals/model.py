@@ -7,6 +7,7 @@ for what crosses the process: the API's answers and the schemas the language mod
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -153,6 +154,14 @@ class CheckHistory(BaseModel):
 # (llm.verify) and drops the reading when they are not there — the model reads, it never knows.
 
 
+type ImpairmentReason = Literal["obsolescence", "restructuring", "other"]
+type ArrKind = Literal["arr", "annualized_revenue", "revenue_run_rate"]
+type FundingKind = Literal["priced_round", "tender", "convertible", "debt", "round_cut"]
+type IpoKind = Literal["filed", "postponed", "withdrawn", "priced"]
+type PriceVsRange = Literal["above", "within", "below", "unknown"]
+type CapacityKind = Literal["cancel", "reduce", "delay", "resell_capacity", "sell_gpus_discount", "expand"]
+
+
 class Quote(BaseModel):
     source_id: str = Field(description="the id of the document the words come from, exactly as given")
     text: str = Field(description="words copied verbatim from that document, 5–40 words")
@@ -163,7 +172,7 @@ class GrowthClaim(BaseModel):
 
     found: bool = Field(description="false when the documents do not state it")
     growth_percent: float = Field(description="e.g. 39 for 'grew 39%'; 0 when not found")
-    quote: Quote | None
+    quote: Quote = Field(description="the words that state it; empty text when not found")
 
 
 class UsefulLifeClaim(BaseModel):
@@ -171,14 +180,14 @@ class UsefulLifeClaim(BaseModel):
     years_max: float = Field(description="the longest useful life the filing gives servers / network equipment, in years")
     years_min: float = Field(description="the shortest, equal to years_max when one number is given")
     changed_in_this_filing: bool = Field(description="true when the filing announces a change of the estimate")
-    quote: Quote | None
+    quote: Quote = Field(description="the words that state it; empty text when not found")
 
 
 class ImpairmentClaim(BaseModel):
     is_compute_hardware: bool = Field(description="true only for servers, GPUs, accelerators, AI/data center equipment")
-    reason: str = Field(description="one of: obsolescence, restructuring, other")
+    reason: ImpairmentReason
     amount_usd: float = Field(description="0 when not stated")
-    quote: Quote | None
+    quote: Quote = Field(description="the words that state it; empty text when not found")
 
 
 class ImpairmentClaims(BaseModel):
@@ -189,8 +198,8 @@ class ArrClaim(BaseModel):
     lab: str = Field(description="OpenAI, Anthropic, …")
     amount_usd: float = Field(description="annualised revenue in US dollars, e.g. 5000000000")
     is_lower_bound: bool = Field(description="true for 'more than', 'over', 'at least'")
-    as_of_month: str = Field(description="YYYY-MM the figure describes")
-    metric_kind: str = Field(description="one of: arr, annualized_revenue, revenue_run_rate")
+    as_of_month: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", description="the month the figure describes, YYYY-MM, e.g. 2026-09")
+    metric_kind: ArrKind
     quote: Quote
 
 
@@ -200,9 +209,9 @@ class ArrClaims(BaseModel):
 
 class FundingEvent(BaseModel):
     company: str
-    kind: str = Field(description="one of: priced_round, tender, convertible, debt, round_cut")
+    kind: FundingKind
     post_money_usd: float = Field(description="valuation after the round in US dollars; 0 when not stated")
-    month: str = Field(description="YYYY-MM of the event")
+    month: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", description="YYYY-MM, e.g. 2026-09")
     protective_terms: bool = Field(description="tranches, ratchets or liquidation preference above 1x are reported")
     quote: Quote
 
@@ -213,10 +222,10 @@ class FundingEvents(BaseModel):
 
 class IpoEvent(BaseModel):
     company: str
-    kind: str = Field(description="one of: filed, postponed, withdrawn, priced")
-    price_vs_range: str = Field(description="one of: above, within, below, unknown")
+    kind: IpoKind
+    price_vs_range: PriceVsRange
     first_day_below_offer: bool
-    month: str
+    month: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", description="YYYY-MM, e.g. 2026-09")
     quote: Quote
 
 
@@ -227,10 +236,10 @@ class IpoEvents(BaseModel):
 class CapacityEvent(BaseModel):
     who: str = Field(description="the company cutting or buying capacity")
     counterparty: str
-    kind: str = Field(description="one of: cancel, reduce, delay, resell_capacity, sell_gpus_discount, expand")
+    kind: CapacityKind
     size_usd: float = Field(description="0 when not stated")
     size_mw: float = Field(description="0 when not stated")
-    month: str
+    month: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", description="YYYY-MM, e.g. 2026-09")
     quote: Quote
 
 
@@ -241,4 +250,4 @@ class CapacityEvents(BaseModel):
 class TokenVolumeClaim(BaseModel):
     found: bool
     tokens_per_month: float = Field(description="tokens processed per month, e.g. 1.3e15 for 1.3 quadrillion")
-    quote: Quote | None
+    quote: Quote = Field(description="the words that state it; empty text when not found")

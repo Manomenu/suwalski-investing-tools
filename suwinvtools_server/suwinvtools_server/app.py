@@ -1,14 +1,14 @@
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
 from suwinvtools_library.marketdata.errors import MarketDataError, UnknownTickerError
 from suwinvtools_library.valuation.errors import ValuationError
-
 from suwinvtools_server import db
 from suwinvtools_server.market.api import router as market_router
 from suwinvtools_server.mcp.server import mcp
@@ -28,7 +28,7 @@ mcp_app = mcp.streamable_http_app(stateless_http=True, json_response=True, host=
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     # Without the database there is nothing to serve, so the server fails to start with a
     # clear error rather than failing every request later.
     db.pool.open(wait=True, timeout=10)

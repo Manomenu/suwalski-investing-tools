@@ -13,11 +13,14 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 
+from pydantic import BaseModel
+
 from suwinvtools_library.marketdata.edgar import Edgar
-from suwinvtools_server.signals.llm import Document, Extractor, verify
+from suwinvtools_library.marketdata.errors import MarketDataError
+from suwinvtools_server.signals.llm import Document, Extractor, LlmError, verify
 from suwinvtools_server.signals.model import Category, Evidence, JsonValue, Outcome, Quote, Reading, Verdict
-from suwinvtools_server.signals.sources.http import Fetch
-from suwinvtools_server.signals.sources.news import Headline
+from suwinvtools_server.signals.sources.http import Fetch, SourceError
+from suwinvtools_server.signals.sources.news import Headline, headlines, search_url
 
 
 @dataclass(frozen=True)
@@ -165,3 +168,23 @@ def verified(quote: Quote | None, documents: Sequence[Document], headlines: Sequ
 def confirmed(domains: Iterable[str], *, primary: bool = False) -> bool:
     """Two independent outlets, or one primary source (a filing, the company itself)."""
     return primary or len({domain for domain in domains if domain}) >= 2
+
+
+# What a `read` turns into INVALID instead of a crash: a source that did not answer or changed its
+# shape, a model that is missing or answered off-schema, a document with an unexpected value.
+READ_ERRORS = (SourceError, MarketDataError, LlmError, ValueError)
+
+
+def ask_news[M: BaseModel](ctx: Context, query: str, schema: type[M], instruction: str) -> tuple[M | None, list[Document], list[Headline]]:
+    """What the model reads in the headlines of a news search; the answer is None when there
+    are no headlines. Raises one of READ_ERRORS."""
+    if ctx.extract is None:
+        raise LlmError("brak skonfigurowanego LLM")
+    found = headlines(ctx.fetch(search_url(query)))
+    documents = documents_from(found)
+    if not documents:
+        return None, [], []
+    answer = ctx.extract(schema, instruction, documents)
+    if not isinstance(answer, schema):
+        raise LlmError(f"the model did not return {schema.__name__}")
+    return answer, documents, found

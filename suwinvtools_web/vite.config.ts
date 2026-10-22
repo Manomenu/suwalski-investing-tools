@@ -1,16 +1,17 @@
-import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-    plugins: [react(), tailwindcss()],
+    plugins: [react()],
     server: {
-        // 3000 is what the API allows as a CORS origin by default — and with this
-        // proxy the browser talks to one origin anyway, so CORS never comes up in dev.
-        port: 3000,
+        port: 3240,
+        strictPort: true,
+        // Same contract as nginx in the image: the browser only ever talks to this origin,
+        // and /api is stripped before the request reaches the server.
         proxy: {
             "/api": {
-                target: "http://localhost:6100",
+                // The end-to-end tests run their own server next to yours (just e2e).
+                target: process.env["API_PROXY_TARGET"] ?? "http://localhost:6240",
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, ""),
             },

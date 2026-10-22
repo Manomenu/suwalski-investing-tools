@@ -5,7 +5,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
-PYTHON_PROJECTS=(myapp_server)
+PYTHON_PROJECTS=(suwinvtools_library suwinvtools_server suwinvtools_cli)
 
 declare -a REPORT
 FAILED=0
@@ -32,8 +32,8 @@ format_check() {
 }
 
 import_contracts() {
-    # [tool.importlinter] in pyproject.toml. Runs from the project, where myapp_server imports.
-    (cd "$ROOT/myapp_server" && unset VIRTUAL_ENV && uv run lint-imports --config "$ROOT/pyproject.toml")
+    # [tool.importlinter] in pyproject.toml. Runs from the project, where suwinvtools_server imports.
+    (cd "$ROOT/suwinvtools_server" && unset VIRTUAL_ENV && uv run lint-imports --config "$ROOT/pyproject.toml")
 }
 
 typecheck_python() {
@@ -51,7 +51,7 @@ pytest_project() {
 
 web() {
     # Same order of concerns as the Python side: types, lint, format, tests.
-    cd "$ROOT/myapp_web"
+    cd "$ROOT/suwinvtools_web"
     [ -d node_modules ] || pnpm install --frozen-lockfile --silent
     pnpm exec "$@"
 }
@@ -118,13 +118,13 @@ done
 # Two TypeScript projects: the app (browser) and the code that runs in Node (vite config, e2e
 # tests). This checks the types of both; it does not run the e2e tests (that is `just e2e`).
 web_typecheck() { web tsc --noEmit -p tsconfig.app.json && web tsc --noEmit -p tsconfig.node.json; }
-run_step "typecheck myapp_web (tsc: app, e2e tests, config)" web_typecheck
-run_step "lint myapp_web (eslint strict + import contracts)" web eslint .
-run_step "format myapp_web (prettier --check)" web prettier --check .
-run_step "test myapp_web (vitest)" web vitest run
+run_step "typecheck suwinvtools_web (tsc: app, e2e tests, config)" web_typecheck
+run_step "lint suwinvtools_web (eslint strict + import contracts)" web eslint .
+run_step "format suwinvtools_web (prettier --check)" web prettier --check .
+run_step "test suwinvtools_web (vitest)" web vitest run
 # Unused files, exports and dependencies. knip.json leaves out the generated API types and
 # openapi-typescript, which only scripts/.internal/api-types.sh uses (knip reads no shell).
-run_step "dead code myapp_web (knip)" web knip
+run_step "dead code suwinvtools_web (knip)" web knip
 run_step "API types up to date (just api-types)" "$ROOT/scripts/.internal/api-types.sh" --check
 
 # Tools a fresh machine may lack are skipped with a visible note instead of a PASS — a

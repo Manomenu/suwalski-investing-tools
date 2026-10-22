@@ -2,7 +2,7 @@
 # library through a uv workspace path, so the build needs both projects plus the root
 # uv.lock — the only lockfile in the repo.
 #
-#   podman build -f suwinvtools_server/Dockerfile -t suwalski-server .
+#   podman build -f suwinvtools_server/Dockerfile -t suwinvtools-server .
 
 FROM docker.io/library/python:3.14-slim AS builder
 
@@ -47,13 +47,13 @@ ENV SUWINVTOOLS_SOLUTION_ROOT=/app
 # losing it costs time rather than data — but the SEC half is expensive enough (3-5 MB a
 # company, slow to pull) that the cluster backs this path with a fixed-size disk instead
 # of letting it die with the pod. A writable dir owned by the app user is all it needs.
-ENV SUWINVTOOLS_MARKET_CACHE=/var/cache/suwalski-market
+ENV SUWINVTOOLS_MARKET_CACHE=/var/cache/suwinvtools-market
 
-RUN install -d -o app -g app /var/cache/suwalski-market
+RUN install -d -o app -g app /var/cache/suwinvtools-market
 
 USER app
 WORKDIR /app
-EXPOSE 6100
+EXPOSE 6240
 
 # Reuses the module entry point the dev script runs, so host and port stay one contract.
 CMD ["python", "-m", "suwinvtools_server"]

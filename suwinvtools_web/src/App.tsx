@@ -1,36 +1,37 @@
-import { useState } from "react";
+import { AppShell } from "@mantine/core";
+import { IconChartLine, IconTrafficLights } from "@tabler/icons-react";
+import { useEffect } from "react";
 
-import { TOOLS } from "./tools";
+import { NAVBAR_WIDTH, ToolRail, type RailTool } from "./navigation/ToolRail";
+import { isToolPath, toolFor } from "./navigation/routing";
+import { usePathname } from "./navigation/usePathname";
+import { ReverseDcfTool } from "./reverse-dcf/ReverseDcfTool";
+import { SignalsTool } from "./signals/SignalsTool";
 
+/** The tools in rail order; the first is where `/` and unknown paths land. */
+const TOOLS: readonly RailTool[] = [
+    { path: "/signals", name: "Sygnały", icon: <IconTrafficLights size={20} /> },
+    { path: "/reverse-dcf", name: "Reverse DCF", icon: <IconChartLine size={20} /> },
+];
+const TOOL_PATHS = TOOLS.map((tool) => tool.path);
+
+/** Puts the page together from features: the rail of tools and the open tool beside it. */
 export function App() {
-    const [activeId, setActiveId] = useState(TOOLS[0]!.id);
-    const active = TOOLS.find((tool) => tool.id === activeId) ?? TOOLS[0]!;
-    const Tool = active.component;
+    const { pathname, navigate } = usePathname();
+    const activePath = toolFor(pathname, TOOL_PATHS);
+    // Until the redirect from `/` lands, the tool sees the path it is about to be at.
+    const toolLocation = isToolPath(pathname, TOOL_PATHS) ? pathname : activePath;
+
+    useEffect(() => {
+        if (!isToolPath(pathname, TOOL_PATHS)) navigate(activePath, { replace: true });
+    }, [pathname, activePath, navigate]);
 
     return (
-        <div className="grid h-full grid-cols-[15rem_1fr]">
-            <nav className="flex flex-col gap-1 overflow-y-auto border-r border-surface0 bg-crust p-3">
-                {TOOLS.map((tool) => {
-                    const selected = tool.id === active.id;
-                    return (
-                        <button
-                            key={tool.id}
-                            type="button"
-                            onClick={() => setActiveId(tool.id)}
-                            aria-current={selected ? "page" : undefined}
-                            className={`rounded-md px-3 py-2 text-left transition-colors ${
-                                selected ? "bg-surface0 text-text" : "text-subtext0 hover:bg-mantle hover:text-text"
-                            }`}
-                        >
-                            <span className="block text-base font-semibold">{tool.name}</span>
-                            <span className="block text-sm text-overlay0">{tool.blurb}</span>
-                        </button>
-                    );
-                })}
-            </nav>
-            <main className="min-h-0 min-w-0 overflow-hidden">
-                <Tool />
-            </main>
-        </div>
+        <AppShell navbar={{ width: NAVBAR_WIDTH, breakpoint: 0 }}>
+            <ToolRail tools={TOOLS} activePath={activePath} onSelect={(path) => navigate(path)} />
+            <AppShell.Main>
+                {activePath === "/signals" ? <SignalsTool path={toolLocation} navigate={navigate} /> : <ReverseDcfTool />}
+            </AppShell.Main>
+        </AppShell>
     );
 }

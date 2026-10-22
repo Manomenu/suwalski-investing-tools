@@ -4,13 +4,13 @@
 # `just db <command>`; check.sh calls `up` before the tests.
 set -euo pipefail
 
-NAME=myapp-postgres
-VOLUME=myapp-postgres
+NAME=suwinvtools-postgres
+VOLUME=suwinvtools-postgres
 # The major version the cluster runs (CloudNativePG); the minor is pinned like every image here.
 IMAGE=docker.io/library/postgres:17.11
-PORT=5523
-USER=myapp
-DB=myapp
+PORT=5473
+USER=suwinvtools
+DB=suwinvtools
 
 wait_ready() {
     for _ in $(seq 1 30); do

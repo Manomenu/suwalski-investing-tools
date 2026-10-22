@@ -17,6 +17,10 @@ spec:
         {{- include "app.labels" . | nindent 8 }}
         app.kubernetes.io/component: server
     spec:
+      {{- with .Values.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ . }}
+      {{- end }}
       containers:
         - name: server
           image: {{ include "app.image" (dict "Values" .Values "component" "server") }}
@@ -24,6 +28,9 @@ spec:
           ports:
             - containerPort: {{ .Values.server.port }}
           env:
+            # Port z values, a nie z .env.base — jedno źródło prawdy dla sondy i procesu.
+            - name: PORT
+              value: {{ .Values.server.port | quote }}
             # Czytane wprost z os.environ przez marketdata/sec.py, nie przez pydantic-settings.
             - name: SEC_USER_AGENT
               valueFrom:
@@ -32,10 +39,15 @@ spec:
                   key: {{ .Values.secret.key }}
                   optional: true
             - name: SUWINVTOOLS_MARKET_CACHE
-              value: /var/cache/suwalski-market
+              value: /var/cache/suwinvtools-market
+          {{- with .Values.server.databaseSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ . }}
+          {{- end }}
           volumeMounts:
             - name: cache
-              mountPath: /var/cache/suwalski-market
+              mountPath: /var/cache/suwinvtools-market
           # /health nie dotyka sieci zewnętrznej, więc nadaje się na sondę.
           readinessProbe:
             httpGet:
