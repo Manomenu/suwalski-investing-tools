@@ -1,11 +1,43 @@
 {
     "venvPath": ".",
     "venv": ".venv",
+    "pythonVersion": "3.12",
+    "typeCheckingMode": "strict",
+    "include": [
+        "suwinvtools_server",
+        "suwinvtools_library",
+        "suwinvtools_cli"
+    ],
+    "executionEnvironments": [
+        {
+            "root": "suwinvtools_server",
+            "extraPaths": [
+                "suwinvtools_library"
+            ]
+        },
+        {
+            "root": "suwinvtools_library"
+        },
+        {
+            "root": "suwinvtools_cli",
+            "extraPaths": [
+                "suwinvtools_library"
+            ]
+        }
+    ],
     "exclude": [
-        "**/.*",
-        "**/node_modules",
+        ".git",
+        ".artifacts",
         "**/.venv",
+        "**/node_modules",
         "**/__pycache__",
-        "suwalski_investing_web"
-    ]
+        "**/.pytest_cache",
+        "**/.ruff_cache",
+        "suwinvtools_web"
+    ],
+    "reportMissingTypeStubs": "error",
+    "reportUnnecessaryTypeIgnoreComment": "error",
+    "reportImplicitOverride": "error",
+    "reportPropertyTypeMismatch": "error",
+    "reportUninitializedInstanceVariable": "error"
 }

@@ -283,10 +283,10 @@ The CLI says what happened on stderr and exits with a code you can branch on:
 
 | Path | What it is |
 | --- | --- |
-| `suwalski_investing_library/` | The valuation engine, the pydantic contracts, and `marketdata/`. The engine half is stdlib + pydantic only — importing it pulls in no scraper, and a test enforces that. |
-| `suwalski_investing_server/` | FastAPI over the engine, plus the MCP server at `/mcp`. Port 6100. |
-| `suwalski_investing_cli/` | `rdcf` — the same engine in the terminal. |
-| `suwalski_investing_web/` | React 19 + Vite + Tailwind 4, Catppuccin Mocha. A static build; no Node server to deploy. Port 3000 in dev. |
+| `suwinvtools_library/` | The valuation engine, the pydantic contracts, and `marketdata/`. The engine half is stdlib + pydantic only — importing it pulls in no scraper, and a test enforces that. |
+| `suwinvtools_server/` | FastAPI over the engine, plus the MCP server at `/mcp`. Port 6100. |
+| `suwinvtools_cli/` | `rdcf` — the same engine in the terminal. |
+| `suwinvtools_web/` | React 19 + Vite + Tailwind 4, Catppuccin Mocha. A static build; no Node server to deploy. Port 3000 in dev. |
 | `scripts/` | Entry points: `run/`, `infra/`, plus the CLI, lint+test and cleanup. |
 | `deploy/chart/` | The Helm chart. |
 | `docs/` | [`reverse-dcf.md`](docs/reverse-dcf.md) (the model and its math), [`guidelines.md`](docs/guidelines.md) (repo rules), `guide/` (how the deployment was built, and why — in Polish). |

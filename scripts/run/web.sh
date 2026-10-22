@@ -4,6 +4,6 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
-cd "$ROOT/suwalski_investing_web"
+cd "$ROOT/suwinvtools_web"
 [ -d node_modules ] || pnpm install
 pnpm dev "$@"

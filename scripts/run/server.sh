@@ -3,6 +3,6 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
-cd "$ROOT/suwalski_investing_server"
+cd "$ROOT/suwinvtools_server"
 unset VIRTUAL_ENV
-uv run python -m suwalski_investing_server "$@"
+uv run python -m suwinvtools_server "$@"

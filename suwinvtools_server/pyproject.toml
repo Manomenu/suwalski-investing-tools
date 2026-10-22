@@ -1,0 +1,28 @@
+[project]
+name = "suwinvtools-server"
+version = "0.1.0"
+description = "HTTP API, MCP server and the AI cycle signals job of suwinvtools"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "suwinvtools-library[tickers]",  # engine, contracts and ticker snapshots (path via uv.sources)
+    "fastapi>=0.115",                # HTTP API + OpenAPI schema the web client is typed from
+    "psycopg[binary,pool]>=3.2",     # PostgreSQL: plain SQL through a connection pool
+    "pydantic>=2.9",                 # request/response models and validation
+    "pydantic-settings>=2.6",        # settings loaded from the layered .env files
+    "uvicorn[standard]>=0.30",       # ASGI server
+    "mcp>=2.2",                      # MCP server for Claude Code at /mcp (2.x: MCPServer, not FastMCP)
+    # Structured output from any OpenAI-compatible /v1 for the signals that read news and filings.
+    # Pinned exactly and bumped in a change of its own: 1.82.7 and 1.82.8 on PyPI were malicious
+    # (March 2026). Pick a release at least two weeks old.
+    "litellm==1.103.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+suwinvtools-library = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["suwinvtools_server"]

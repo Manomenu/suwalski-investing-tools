@@ -14,9 +14,9 @@ a wszystko, co różni te miejsca, dociera do niego dopiero przy starcie, jako z
 
 | Plik | Rola |
 | --- | --- |
-| `suwalski_investing_server/Dockerfile` | FastAPI jako wheel na slim Pythonie. Dwa etapy, nie-root, 382 MB. |
-| `suwalski_investing_web/Dockerfile` | `vite build` w Node, a potem już tylko statyczne pliki pod nginx. 56 MB. |
-| `suwalski_investing_web/nginx.conf.template` | Jak nginx serwuje SPA i gdzie przekazuje `/api`. |
+| `suwinvtools_server/Dockerfile` | FastAPI jako wheel na slim Pythonie. Dwa etapy, nie-root, 382 MB. |
+| `suwinvtools_web/Dockerfile` | `vite build` w Node, a potem już tylko statyczne pliki pod nginx. 56 MB. |
+| `suwinvtools_web/nginx.conf.template` | Jak nginx serwuje SPA i gdzie przekazuje `/api`. |
 | `compose.yaml` | Oba obrazy spięte tak, jak spnie je ingress. Harness weryfikacyjny, nie deployment. |
 | `.dockerignore` | Trzyma `.venv`, `node_modules` i `.env` poza kontekstem budowania. |
 
@@ -159,7 +159,7 @@ dotyczy.
 
 **Kontekst budowania to katalog główny solucji.** Serwer zależy od biblioteki przez
 ścieżkę workspace'u uv, a jedyny `uv.lock` leży w korzeniu. Stąd
-`-f suwalski_investing_server/Dockerfile .` — plik mieszka przy projekcie, który opisuje,
+`-f suwinvtools_server/Dockerfile .` — plik mieszka przy projekcie, który opisuje,
 ale buduje się z góry. Tak robi każde monorepo z lockfile'em w korzeniu.
 
 **Manifesty przed źródłami.** Warstwa z zależnościami jest droga i zmienia się rzadko;
@@ -195,7 +195,7 @@ Haczyk: taki dysk w k3s obsługuje jeden pod naraz. Przy jednej replice bez znac
 
 1. **`SOLUTION_ROOT`** — biblioteka wylicza korzeń solucji z własnego `__file__`, co działa
    tylko dla instalacji editable. W obrazie pakiet siedzi w site-packages. Stąd jawne
-   `SUWALSKI_SOLUTION_ROOT=/app`.
+   `SUWINVTOOLS_SOLUTION_ROOT=/app`.
 2. **Nazwy obrazów bazowych** — podman odmawia rozwiązywania krótkich nazw bez TTY.
    Wszystkie bazy są pełne (`docker.io/library/python:3.14-slim`), co jest i tak lepszą
    praktyką.

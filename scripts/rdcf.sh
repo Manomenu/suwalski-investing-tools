@@ -5,6 +5,6 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-cd "$ROOT/suwalski_investing_cli"
+cd "$ROOT/suwinvtools_cli"
 unset VIRTUAL_ENV
 uv run rdcf "$@"
