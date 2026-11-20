@@ -2,6 +2,12 @@
 # decyduje, co biegnie. Zostawiony tutaj na sztywno oznaczałby, że commit z kodem jest
 # jednocześnie wdrożeniem.
 
+# Wyłączone = chart nic nie renderuje: Argo usuwa wszystkie obiekty wydania i klaster jest wolny,
+# a zostaje to, czego chart nie posiada (namespace, jego Secrety, baza). Uwaga: PVC cache należy
+# do charta, więc po wyłączeniu znika (to tylko cache). Repo platformy włącza i wyłącza wdrożenie
+# tą jedną wartością.
+enabled: true
+
 image:
   registry: ghcr.io/manomenu/suwalski-investing-tools
   tag: "" # np. sha-a1b2c3d — podawane przez Argo Application
