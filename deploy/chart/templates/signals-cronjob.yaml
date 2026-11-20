@@ -1,3 +1,5 @@
+{{- /* Everything renders only while the release is enabled (values.yaml, enabled). */ -}}
+{{- if .Values.enabled }}
 {{- /*
 Miesięczny job sygnałów końca hossy na AI. Ten sam obraz co serwer, inne polecenie — jak
 w compose (`podman compose run --rm signals run`). Czyta EDGAR, vast.ai, OpenRouter i Google
@@ -71,4 +73,5 @@ spec:
               securityContext:
                 runAsNonRoot: true
                 allowPrivilegeEscalation: false
+{{- end }}
 {{- end }}
